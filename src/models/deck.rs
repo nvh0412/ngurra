@@ -30,7 +30,7 @@ use time::OffsetDateTime;
 /// deck.save(&connection);
 /// ```
 pub struct Deck {
-    id: Option<i32>,
+    pub id: Option<i32>,
     name: String,
     creation_time: SystemTime,
     last_studied_date: SystemTime,
@@ -65,7 +65,7 @@ impl Deck {
     ///
     /// A `Result` containing a vector of all decks, or an error if the operation fails.
     pub fn get_all_decks(conn: &Connection) -> Result<Vec<Deck>> {
-        let mut stmt = conn.prepare("SELECT id, name, creation_time, last_studied_date FROM deck")?;
+        let mut stmt = conn.prepare("SELECT id, name, creation_time, last_studied_date FROM decks")?;
 
         let decks = stmt.query_map([], |row| {
             let creation_time: String = row.get(2)?;
@@ -98,12 +98,13 @@ impl Deck {
     /// # Arguments
     ///
     /// * `id` - The ID of the deck to load.
+    /// * `conn` - The database connection.
     ///
     /// # Returns
     ///
     /// A `Result` containing the loaded deck, or an error if the operation fails.
     pub fn load(id: i32, conn: &Connection) -> Result<Deck> {
-        let mut stmt = conn.prepare("SELECT id, name, creation_time, last_studied_date FROM deck WHERE id = ?")?;
+        let mut stmt = conn.prepare("SELECT id, name, creation_time, last_studied_date FROM decks WHERE id = ?")?;
 
         let deck = stmt.query_row(&[&id], |row| {
             let creation_time: String = row.get(2)?;
@@ -144,13 +145,13 @@ impl Deck {
         match self.id {
             Some(id) => {
                 conn.execute(
-                    "UPDATE deck SET name = ?, last_studied_date = ? WHERE id = ?",
+                    "UPDATE decks SET name = ?, last_studied_date = ? WHERE id = ?",
                     &[&self.name, &last_studied_date.to_rfc3339(), &id.to_string()],
                 )?;
             }
             None => {
                 conn.execute(
-                    "INSERT INTO deck (name, creation_time, last_studied_date) VALUES (?, ?, ?)",
+                    "INSERT INTO decks (name, creation_time, last_studied_date) VALUES (?, ?, ?)",
                     &[
                         &self.name,
                         &DateTime::<Utc>::from(self.creation_time).to_rfc3339(),
@@ -162,6 +163,22 @@ impl Deck {
                 self.id = Some(id as i32);
             }
         }
+
+        Ok(())
+    }
+
+    /// Deletes the deck from the database.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The ID of the deck to load.
+    /// * `conn` - The database connection.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` indicating success or failure.
+    pub fn delete(id: i32, conn: &Connection) -> Result<()> {
+        conn.execute("DELETE FROM decks WHERE id = ?", &[&id])?;
 
         Ok(())
     }
@@ -208,5 +225,21 @@ mod test {
         deck.save(&conn).unwrap();
 
         assert!(deck.id.is_some());
+    }
+
+    #[test]
+    fn delete() {
+        let conn = Connection::open_in_memory().unwrap();
+        init_db(&conn).unwrap();
+
+        let mut deck = Deck::new("Test Deck");
+        deck.save(&conn).unwrap();
+
+        Deck::delete(deck.id.unwrap(), &conn).unwrap();
+
+        let loaded_deck = Deck::load(deck.id.unwrap(), &conn);
+
+        assert!(loaded_deck.is_err());
+        assert_eq!(loaded_deck.err().unwrap().to_string(), "Query returned no rows");
     }
 }
