@@ -4,7 +4,6 @@ use chrono::{DateTime, Utc};
 use rusqlite::{Connection, Result};
 use time::OffsetDateTime;
 
-#[derive(Debug)]
 pub struct FlashCard {
     id: Option<i32>,
     deck_id: i32,
