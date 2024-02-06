@@ -1,5 +1,7 @@
 use gpui::*;
 
+use crate::components::tab_bar_container::TabBarContainer;
+
 actions!(
     ngurra,
     [
@@ -8,28 +10,26 @@ actions!(
 );
 
 pub struct Ngurra {
-    text: SharedString
+    view: AnyView
 }
 
 impl Ngurra {
-    pub fn new() -> Self {
-        Ngurra {
-            text: "abc".into()
-        }
+    pub fn new(view: AnyView) -> Self {
+        Self { view }
     }
 }
 
 impl Render for Ngurra {
-    fn render(&mut self, _cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         div()
             .flex()
-            .justify_center()
-            .items_center()
-            .text_xl()
-            .text_color(rgb(0xffffff))
-            .child("Hello, World!")
+            .flex_col()
+            .size_full()
+            .child(TabBarContainer::view(cx))
+            .child(self.view.clone())
     }
 }
 
 pub fn init(cx: &mut AppContext) {
+    cx.on_action(|_: &Hide, cx| cx.hide() )
 }

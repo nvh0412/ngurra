@@ -1,4 +1,5 @@
 mod models;
+mod components;
 mod db;
 mod ngurra;
 
@@ -7,9 +8,11 @@ use gpui::*;
 pub use models::flash_card::FlashCard;
 pub use models::deck::Deck;
 use ngurra::Ngurra;
-use rusqlite::{Connection, Result};
+use rusqlite::Connection;
 
 use std::io::{IsTerminal, Write};
+
+use crate::components::deck_list_container::DeckListContainer;
 
 fn main() {
     if let Ok(conn) = Connection::open("anki-rs.db") {
@@ -20,12 +23,34 @@ fn main() {
 
     init_logger();
 
+    let conn = Connection::open("anki-rs.db").unwrap();
+    init_db(&conn).unwrap_or_else(|e| {
+        log::error!("Failed to initialize database: {}", e);
+        std::process::exit(1);
+    });
+
     log::info!("========== starting Ngurra ==========");
     App::new().run(|cx: &mut AppContext| {
         ngurra::init(cx);
 
-        cx.open_window(WindowOptions::default(), |cx| {
-            cx.new_view(|_cx| Ngurra::new())
+        cx.open_window(WindowOptions {
+            bounds: WindowBounds::Fixed(Bounds {
+                origin: Point { x: 100.0.into(), y: 100.0.into() },
+                size: Size { width: 800.0.into(), height: 600.0.into() },
+            }),
+            titlebar: Some(TitlebarOptions {
+                title: Default::default(),
+                appears_transparent: Default::default(),
+                traffic_light_position: Default::default(),
+            }),
+            center: true,
+            focus: true,
+            show: true,
+            kind: WindowKind::Normal,
+            is_movable: true,
+            display_id: None,
+        }, |cx| {
+            cx.new_view(|cx| Ngurra::new(DeckListContainer::view(cx).into()))
         });
     });
 }

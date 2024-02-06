@@ -31,7 +31,7 @@ use time::OffsetDateTime;
 /// ```
 pub struct Deck {
     pub id: Option<i32>,
-    name: String,
+    pub name: String,
     creation_time: SystemTime,
     last_studied_date: SystemTime,
 }
