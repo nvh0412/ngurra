@@ -2,6 +2,7 @@ mod models;
 mod components;
 mod db;
 mod ngurra;
+mod theme;
 
 use db::init_db;
 use gpui::*;
@@ -12,7 +13,7 @@ use rusqlite::Connection;
 
 use std::io::{IsTerminal, Write};
 
-use crate::components::deck_list_container::DeckListContainer;
+use crate::{components::deck_list_container::DeckListContainer, theme::Theme};
 
 fn main() {
     if let Ok(conn) = Connection::open("anki-rs.db") {
@@ -32,6 +33,7 @@ fn main() {
     log::info!("========== starting Ngurra ==========");
     App::new().run(|cx: &mut AppContext| {
         ngurra::init(cx);
+        Theme::init(cx);
 
         cx.open_window(WindowOptions {
             bounds: WindowBounds::Fixed(Bounds {

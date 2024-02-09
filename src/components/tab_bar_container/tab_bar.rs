@@ -1,5 +1,7 @@
 use gpui::{div, rems, rgb, AnyElement, ElementId, InteractiveElement, IntoElement, ParentElement, RenderOnce, Styled};
 
+use crate::theme::{self, Theme};
+
 #[derive(IntoElement)]
 pub struct TabBar {
     id: ElementId,
@@ -23,6 +25,7 @@ impl ParentElement for TabBar {
 
 impl RenderOnce for TabBar {
     fn render(self, cx: &mut gpui::WindowContext) -> impl IntoElement {
+        let theme = cx.global::<Theme>();
         const HEIGHT_IN_REMS: f32 = 29. / 16.;
 
         div()
@@ -30,9 +33,9 @@ impl RenderOnce for TabBar {
             .group("tab_bar")
             .flex()
             .border_1()
-            .border_color(rgb(0xffffff))
+            .border_color(theme.crust)
             .h(rems(HEIGHT_IN_REMS))
-            .text_color(rgb(0xffffff))
+            .text_color(theme.text)
             .child(format!("Tab bar!"))
     }
 }

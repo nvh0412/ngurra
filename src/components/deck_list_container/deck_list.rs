@@ -1,7 +1,7 @@
 use gpui::{div, prelude::*, rgb, Render, View, WindowContext};
 use rusqlite::Connection;
 
-use crate::Deck;
+use crate::{theme::Theme, Deck};
 
 pub struct DeckList;
 
@@ -25,20 +25,21 @@ impl DeckList {
 }
 
 impl Render for DeckList {
-    fn render(&mut self, _cx: &mut gpui::ViewContext<Self>) -> impl gpui::prelude::IntoElement {
+    fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::prelude::IntoElement {
+        let theme: &Theme = cx.global();
+
         div()
             .mt_2()
             .border_1()
-            .border_color(rgb(0xffffff))
+            .border_color(theme.crust)
             .rounded_xl()
             .border_r_1()
-            .text_color(rgb(0xffffff))
+            .text_color(theme.text)
             .p_3()
             .child(
                 div()
                     .flex()
                     .flex_row()
-                    .text_color(rgb(0xffffff))
                     .child(div().px_2().min_w_40().child(format!("Deck")))
                     .child(div().px_2().min_w_20().flex().justify_center().child(format!("New")))
                     .child(div().px_2().min_w_20().flex().justify_center().child(format!("Learn")))
@@ -51,7 +52,6 @@ impl Render for DeckList {
                         div()
                             .flex()
                             .flex_row()
-                            .text_color(rgb(0xffffff))
                             .child(div().px_2().min_w_40().child(deck.name))
                             .child(div().px_2().min_w_20().flex().justify_center().child(format!("0")))
                             .child(div().px_2().min_w_20().flex().justify_center().child(format!("1")))

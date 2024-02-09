@@ -13,3 +13,4 @@ time = "0.3"
 uuid = { version = "0.8", features = ["v4"] }
 env_logger = "0.9"
 log = "0.4.20"
+catppuccin = "1.4.0"

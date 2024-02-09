@@ -1,6 +1,7 @@
+use catppuccin::Flavour;
 use gpui::*;
 
-use crate::components::tab_bar_container::TabBarContainer;
+use crate::theme::Theme;
 
 actions!(
     ngurra,
@@ -21,12 +22,46 @@ impl Ngurra {
 
 impl Render for Ngurra {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let theme = cx.global::<Theme>();
+
         div()
             .flex()
             .flex_col()
             .size_full()
-            .child(TabBarContainer::view(cx))
+            .bg(theme.base)
+            .font(theme.font_mono.clone())
             .child(self.view.clone())
+            .child(
+                div()
+                    .absolute()
+                    .w_full()
+                    .bottom_0()
+                    .left_0()
+                    .right_0()
+                    .bg(theme.mantle)
+                    .border_t_1()
+                    .border_color(theme.crust)
+                    .px_4()
+                    .py_2()
+                    .text_color(theme.text)
+                    .flex()
+                    .text_xs()
+                    .child(
+                        div().mr_2().on_mouse_down(MouseButton::Left, |_ev, cx| {
+                            Theme::change(Flavour::Latte, cx)
+                        }).child("Latte")
+                    )
+                    .child(
+                        div().mr_2().on_mouse_down(MouseButton::Left, |_ev, cx| {
+                            Theme::change(Flavour::Mocha, cx)
+                        }).child("Mocha")
+                    )
+                    .child(
+                        div().mr_2().on_mouse_down(MouseButton::Left, |_ev, cx| {
+                            Theme::change(Flavour::Frappe, cx)
+                        }).child("Frappe")
+                    )
+            )
     }
 }
 
