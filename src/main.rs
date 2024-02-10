@@ -3,6 +3,7 @@ mod components;
 mod db;
 mod ngurra;
 mod theme;
+mod state;
 
 use db::init_db;
 use gpui::*;
@@ -13,7 +14,7 @@ use rusqlite::Connection;
 
 use std::io::{IsTerminal, Write};
 
-use crate::{components::deck_list_container::DeckListContainer, theme::Theme};
+use crate::theme::Theme;
 
 fn main() {
     if let Ok(conn) = Connection::open("anki-rs.db") {
@@ -52,7 +53,7 @@ fn main() {
             is_movable: true,
             display_id: None,
         }, |cx| {
-            cx.new_view(|cx| Ngurra::new(DeckListContainer::view(cx).into()))
+            Ngurra::view(cx)
         });
     });
 }

@@ -1,4 +1,4 @@
-use gpui::{div, prelude::*, rgb, Render, View, WindowContext};
+use gpui::{div, prelude::*, Render, View, WindowContext};
 use rusqlite::Connection;
 
 use crate::{theme::Theme, Deck};

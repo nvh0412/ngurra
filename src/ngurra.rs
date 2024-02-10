@@ -1,7 +1,7 @@
 use catppuccin::Flavour;
 use gpui::*;
 
-use crate::theme::Theme;
+use crate::{state::{AppState, ViewState}, theme::Theme};
 
 actions!(
     ngurra,
@@ -11,12 +11,16 @@ actions!(
 );
 
 pub struct Ngurra {
-    view: AnyView
+    state: AppState
 }
 
 impl Ngurra {
-    pub fn new(view: AnyView) -> Self {
-        Self { view }
+    pub fn view(cx: &mut WindowContext) -> View<Self> {
+        cx.new_view(|cx| {
+            let app_state = AppState::init(cx);
+            cx.set_global(app_state.clone());
+            Self { state: app_state }
+        })
     }
 }
 
@@ -24,13 +28,16 @@ impl Render for Ngurra {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let theme = cx.global::<Theme>();
 
+        let view_stack: &Vec<ViewState> = self.state.model.read(cx).view_stack.as_ref();
+        let current_view = view_stack.last().unwrap();
+
         div()
             .flex()
             .flex_col()
             .size_full()
             .bg(theme.base)
             .font(theme.font_mono.clone())
-            .child(self.view.clone())
+            .child(current_view.view.clone())
             .child(
                 div()
                     .absolute()

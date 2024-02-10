@@ -1,5 +1,5 @@
 use catppuccin::{Flavour, FlavourColours};
-use gpui::{App, AppContext, Global, Hsla, Rgba, SharedString};
+use gpui::{AppContext, Global, Hsla, Rgba, SharedString};
 
 fn color_to_hsla(color: catppuccin::Colour) -> Hsla {
     Rgba {
