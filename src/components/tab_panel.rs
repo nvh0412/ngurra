@@ -1,7 +1,9 @@
+use std::rc::Rc;
+
 use crate::state::StateView;
 use gpui::{prelude::*, AnyView, ViewContext};
 
-use super::{deck_list_container::DeckListContainer, tab_bar_container::TabBarContainer};
+use super::{add_card_container::AddCardContainer, browse_container::BrowseContainer, deck_list_container::DeckListContainer, tab_bar_container::{TabBarContainer, TabBarView, TabEvent}};
 
 pub struct TabPanelBuilder;
 
@@ -25,11 +27,22 @@ impl StateView for TabPanelBuilder {
             content: DeckListContainer::view(cx).into()
         };
 
+        let tab_view = Rc::clone(&tabbar.view);
+
         cx.new_view(|cx| {
             cx.subscribe(
-                &tabbar.view,
-                move|subscriber, _emitter, event, cx| {
+                &*tab_view.borrow_mut(),
+                move |subscriber: &mut TabPanel, _emitter, event, cx| {
                     match event {
+                        TabEvent::Deck => {
+                            subscriber.content = DeckListContainer::view(cx).into()
+                        }
+                        TabEvent::Add => {
+                            subscriber.content = AddCardContainer::view(cx).into()
+                        }
+                        TabEvent::Browse => {
+                            subscriber.content = BrowseContainer::view(cx).into()
+                        }
                         _ => {}
                     }
                 }

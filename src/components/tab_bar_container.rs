@@ -1,14 +1,12 @@
+use std::{cell::RefCell, rc::Rc};
+
 use gpui::{div, prelude::*, EventEmitter, Render, View, WindowContext};
 
 use crate::theme::Theme;
 
-use self::tab_bar::TabBar;
-
-mod tab_bar;
-
 #[derive(IntoElement, Clone)]
 pub struct TabBarContainer {
-    pub view: View<TabBarView>,
+    pub view: Rc<RefCell<View<TabBarView>>>,
 }
 
 pub struct TabBarView {
@@ -17,7 +15,7 @@ pub struct TabBarView {
 impl TabBarContainer {
     pub fn new(cx: &mut WindowContext) -> Self {
         let view = TabBarView::init(cx);
-        Self { view }
+        Self { view: Rc::new(RefCell::new(view)) }
     }
 }
 
@@ -41,7 +39,17 @@ impl EventEmitter<TabEvent> for TabBarView {}
 
 impl Render for TabBarView {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl IntoElement {
+
+    }
+}
+
+impl RenderOnce for TabBarContainer {
+    fn render(self, cx: &mut WindowContext) -> impl IntoElement {
         let theme = cx.global::<Theme>();
+
+        let view_clone1 = Rc::clone(&self.view);
+        let view_clone2 = Rc::clone(&self.view);
+        let view_clone3 = Rc::clone(&self.view);
 
         div()
             .w_full()
@@ -53,15 +61,58 @@ impl Render for TabBarView {
                 div()
                     .bg(theme.mantle)
                     .flex()
-                    .child(TabBar::new("deck", String::from("Deck")))
-                    .child(TabBar::new("add", String::from("Add")))
-                    .child(TabBar::new("browse", String::from("Browse")))
+                    .child(
+                        div()
+                            .group("tab_bar")
+                            .flex()
+                            .border_1()
+                            .border_color(theme.crust)
+                            .px_4()
+                            .py_2()
+                            .text_color(theme.text)
+                            .child("Deck")
+                            .on_mouse_down(gpui::MouseButton::Left, move |_ev, cx| {
+                                view_clone1.borrow_mut().update(cx, |e, cx| {
+                                    cx.emit(TabEvent::Deck);
+                                    cx.notify();
+                                })
+                            })
+                    )
+                    .child(
+                        div()
+                            .group("tab_bar")
+                            .flex()
+                            .border_1()
+                            .border_color(theme.crust)
+                            .px_4()
+                            .py_2()
+                            .text_color(theme.text)
+                            .child("Add")
+                            .on_mouse_down(gpui::MouseButton::Left, move |_ev, cx| {
+                                view_clone2.borrow_mut().update(cx, |e, cx| {
+                                    cx.emit(TabEvent::Add);
+                                    cx.notify();
+                                })
+                            })
+                    )
+                    .child(
+                        div()
+                            .group("tab_bar")
+                            .flex()
+                            .border_1()
+                            .border_color(theme.crust)
+                            .px_4()
+                            .py_2()
+                            .text_color(theme.text)
+                            .child("Browse")
+                            .on_mouse_down(gpui::MouseButton::Left, move |_ev, cx| {
+                                view_clone3.borrow_mut().update(cx, |e, cx| {
+                                    cx.emit(TabEvent::Browse);
+                                    cx.notify();
+                                })
+                            }
+                    )
+                )
             )
-    }
-}
-
-impl RenderOnce for TabBarContainer {
-    fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        self.view
     }
 }
