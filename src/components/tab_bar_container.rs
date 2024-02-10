@@ -39,7 +39,6 @@ impl EventEmitter<TabEvent> for TabBarView {}
 
 impl Render for TabBarView {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl IntoElement {
-
     }
 }
 

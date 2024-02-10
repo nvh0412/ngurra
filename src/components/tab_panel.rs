@@ -43,7 +43,6 @@ impl StateView for TabPanelBuilder {
                         TabEvent::Browse => {
                             subscriber.content = CardBrowserView::view(cx).into()
                         }
-                        _ => {}
                     }
                 }
             ).detach();

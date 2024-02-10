@@ -1,5 +1,3 @@
-use std::env::current_dir;
-
 use catppuccin::Flavour;
 use gpui::*;
 
@@ -59,17 +57,12 @@ impl Render for Ngurra {
                     .child(
                         div().mr_2().on_mouse_down(MouseButton::Left, |_ev, cx| {
                             Theme::change(Flavour::Latte, cx)
-                        }).child("Latte")
+                        }).child("Light")
                     )
                     .child(
                         div().mr_2().on_mouse_down(MouseButton::Left, |_ev, cx| {
                             Theme::change(Flavour::Mocha, cx)
-                        }).child("Mocha")
-                    )
-                    .child(
-                        div().mr_2().on_mouse_down(MouseButton::Left, |_ev, cx| {
-                            Theme::change(Flavour::Frappe, cx)
-                        }).child("Frappe")
+                        }).child("Dark")
                     )
             )
     }

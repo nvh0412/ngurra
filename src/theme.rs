@@ -38,7 +38,7 @@ impl From<FlavourColours> for Theme {
 
 impl Theme {
     fn new() -> Self {
-        Self::from(Flavour::Mocha.colours())
+        Self::from(Flavour::Latte.colours())
     }
 
     pub fn init(cx: &mut AppContext) {
