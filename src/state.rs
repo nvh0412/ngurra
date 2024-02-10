@@ -1,9 +1,10 @@
 
 use gpui::{AnyView, Context, Global, Model, WindowContext};
 
-use crate::components::deck_list_container::DeckListContainer;
+use crate::components::{tab_bar_container::TabBarContainer, tab_panel::TabPanelBuilder};
 
 pub struct ViewState {
+    pub tabbar: TabBarContainer,
     pub view: AnyView
 }
 
@@ -12,16 +13,11 @@ pub struct State {
 }
 
 impl ViewState {
-    fn init(view: AnyView) -> Self {
-        Self { view: view }
-    }
-}
+    fn init(view: impl StateView, cx: &mut WindowContext) -> Self {
+        let tabbar = TabBarContainer::new(cx);
 
-#[derive(Clone, PartialEq, Eq, Hash)]
-pub enum SupportedTab {
-    Deck,
-    Add,
-    Browser
+        Self { view: view.build(&tabbar, cx), tabbar }
+    }
 }
 
 #[derive(Clone)]
@@ -31,21 +27,28 @@ pub struct AppState {
 
 impl Global for AppState {}
 
+pub trait StateView {
+    fn build(
+        &self,
+        tabbar: &TabBarContainer,
+        cx: &mut WindowContext
+    ) -> AnyView;
+}
+
 impl AppState {
     pub fn init(cx: &mut WindowContext) -> Self {
         let app_state = AppState {
             model: cx.new_model(|_| State { view_stack: vec![] })
         };
 
-        app_state.push(DeckListContainer::view(cx).into(), cx);
+        app_state.push(TabPanelBuilder {}, cx);
 
         app_state
     }
 
-    pub fn push(&self, view: AnyView, cx: &mut WindowContext) {
-        let view_state = ViewState::init(view);
+    pub fn push(&self, view: impl StateView, cx: &mut WindowContext) {
+        let view_state = ViewState::init(view, cx);
         self.model.update(cx, |model, cx| {
-            println!("Push a new view");
             model.view_stack.push(view_state);
             cx.notify();
         });

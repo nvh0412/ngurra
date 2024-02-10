@@ -5,14 +5,16 @@ use crate::theme::{self, Theme};
 #[derive(IntoElement)]
 pub struct TabBar {
     id: ElementId,
-    children: Vec<AnyElement>
+    children: Vec<AnyElement>,
+    text: String
 }
 
 impl TabBar {
-    pub fn new(id: impl Into<ElementId>) -> Self {
+    pub fn new(id: impl Into<ElementId>, text: String) -> Self {
         Self {
             id: id.into(),
-            children: Vec::new()
+            children: Vec::new(),
+            text
         }
     }
 }
@@ -26,7 +28,6 @@ impl ParentElement for TabBar {
 impl RenderOnce for TabBar {
     fn render(self, cx: &mut gpui::WindowContext) -> impl IntoElement {
         let theme = cx.global::<Theme>();
-        const HEIGHT_IN_REMS: f32 = 29. / 16.;
 
         div()
             .id(self.id)
@@ -34,8 +35,9 @@ impl RenderOnce for TabBar {
             .flex()
             .border_1()
             .border_color(theme.crust)
-            .h(rems(HEIGHT_IN_REMS))
+            .px_4()
+            .py_2()
             .text_color(theme.text)
-            .child(format!("Tab bar!"))
+            .child(self.text)
     }
 }

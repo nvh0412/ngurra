@@ -1,3 +1,5 @@
+use std::env::current_dir;
+
 use catppuccin::Flavour;
 use gpui::*;
 
@@ -37,6 +39,7 @@ impl Render for Ngurra {
             .size_full()
             .bg(theme.base)
             .font(theme.font_mono.clone())
+            .child(current_view.tabbar.clone())
             .child(current_view.view.clone())
             .child(
                 div()
