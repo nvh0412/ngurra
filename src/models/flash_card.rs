@@ -11,6 +11,8 @@ pub struct FlashCard {
     answer: String,
     creation_time: SystemTime,
     last_studied_date: SystemTime,
+    ef: f32,
+    interval: i32,
     performance_metrics: HashMap<String, i32>
 }
 
@@ -23,7 +25,9 @@ impl FlashCard {
             answer: answer.to_string(),
             creation_time: SystemTime::now(),
             last_studied_date: SystemTime::now(),
-            performance_metrics: HashMap::new()
+            performance_metrics: HashMap::new(),
+            ef: 2.5,
+            interval: 1
         }
     }
 
@@ -46,7 +50,7 @@ impl FlashCard {
     ///
     /// A `Result` containing a vector of `FlashCard` instances.
     pub fn get_all_cards_in_deck(deck_id: i32, conn: &Connection) -> Result<Vec<FlashCard>> {
-        let mut stmt = conn.prepare("SELECT id, question, answer, creation_time, last_studied_date FROM cards WHERE deck_id = ?")?;
+        let mut stmt = conn.prepare("SELECT id, question, answer, creation_time, last_studied_date, ef, interval FROM cards WHERE deck_id = ?")?;
         let card_iter = stmt.query_map(&[&deck_id.to_string()], |row| {
             let creation_time: String = row.get(3)?;
             let last_studied_date: String = row.get(4)?;
@@ -64,7 +68,9 @@ impl FlashCard {
                 answer: row.get(2)?,
                 creation_time,
                 last_studied_date,
-                performance_metrics: HashMap::new()
+                performance_metrics: HashMap::new(),
+                ef: row.get(5)?,
+                interval: row.get(6)?
             })
         })?;
 
@@ -87,7 +93,7 @@ impl FlashCard {
     ///
     /// A `Result` containing the loaded card, or an error if the operation fails.
     pub fn load(id: i32, conn: &Connection) -> Result<FlashCard> {
-        let mut stmt = conn.prepare("SELECT id, deck_id, question, answer, creation_time, last_studied_date FROM cards WHERE id = ?")?;
+        let mut stmt = conn.prepare("SELECT id, deck_id, question, answer, creation_time, last_studied_date, ef, interval FROM cards WHERE id = ?")?;
 
         let deck = stmt.query_row(&[&id], |row| {
             let creation_time: String = row.get(4)?;
@@ -106,7 +112,9 @@ impl FlashCard {
                 answer: row.get(3)?,
                 creation_time,
                 last_studied_date,
-                performance_metrics: HashMap::new()
+                performance_metrics: HashMap::new(),
+                ef: row.get(6)?,
+                interval: row.get(7)?
             })
         })?;
 
@@ -131,19 +139,29 @@ impl FlashCard {
         match self.id {
             Some(id) => {
                 conn.execute(
-                    "UPDATE cards SET question = ?, answer = ?, last_studied_date = ?, deck_id = ? WHERE id = ?",
-                    &[&self.question, &self.answer, &last_studied_date.to_rfc3339(), &id.to_string(), &self.deck_id.to_string()]
+                    "UPDATE cards SET question = ?, answer = ?, last_studied_date = ?, deck_id = ?, ef = ?, interval = ? WHERE id = ?",
+                    &[
+                        &self.question,
+                        &self.answer,
+                        &last_studied_date.to_rfc3339(),
+                        &id.to_string(),
+                        &self.deck_id.to_string(),
+                        &self.ef.to_string(),
+                        &self.interval.to_string()
+                    ]
                 )?;
             }
             None => {
                 conn.execute(
-                    "INSERT INTO cards (question, answer, creation_time, last_studied_date, deck_id) VALUES (?, ?, ?, ?, ?)",
+                    "INSERT INTO cards (question, answer, creation_time, last_studied_date, deck_id, ef, interval) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     &[
                         &self.question,
                         &self.answer,
                         &DateTime::<Utc>::from(self.creation_time).to_rfc3339(),
                         &last_studied_date.to_rfc3339(),
-                        &self.deck_id.to_string()
+                        &self.deck_id.to_string(),
+                        &self.ef.to_string(),
+                        &self.interval.to_string()
                     ]
                 )?;
 
