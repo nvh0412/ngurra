@@ -1,3 +1,4 @@
+mod repositories;
 mod models;
 mod components;
 mod db;
@@ -7,8 +8,8 @@ mod state;
 
 use db::init_db;
 use gpui::*;
-pub use models::flash_card::FlashCard;
-pub use models::deck::Deck;
+pub use repositories::flash_card::FlashCard;
+pub use repositories::deck::Deck;
 use ngurra::Ngurra;
 use rusqlite::Connection;
 

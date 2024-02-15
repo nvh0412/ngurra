@@ -1,8 +1,16 @@
-use std::{collections::HashMap, time::SystemTime};
+use std::{collections::HashMap, time::{Duration, SystemTime}};
 
 use chrono::{DateTime, Utc};
 use rusqlite::{Connection, Result};
 use time::OffsetDateTime;
+
+
+#[derive(PartialEq, Debug)]
+pub enum Status {
+    New,
+    Learning,
+    Due
+}
 
 pub struct FlashCard {
     id: Option<i32>,
@@ -10,9 +18,10 @@ pub struct FlashCard {
     question: String,
     answer: String,
     creation_time: SystemTime,
-    last_studied_date: SystemTime,
+    last_studied_time: Option<SystemTime>,
     ef: f32,
-    interval: i32,
+    interval: f64,
+    status: Status,
     performance_metrics: HashMap<String, i32>
 }
 
@@ -24,10 +33,11 @@ impl FlashCard {
             question: question.to_string(),
             answer: answer.to_string(),
             creation_time: SystemTime::now(),
-            last_studied_date: SystemTime::now(),
+            last_studied_time: None,
             performance_metrics: HashMap::new(),
             ef: 2.5,
-            interval: 1
+            interval: 1.0,
+            status: Status::New
         }
     }
 
@@ -50,16 +60,21 @@ impl FlashCard {
     ///
     /// A `Result` containing a vector of `FlashCard` instances.
     pub fn get_all_cards_in_deck(deck_id: i32, conn: &Connection) -> Result<Vec<FlashCard>> {
-        let mut stmt = conn.prepare("SELECT id, question, answer, creation_time, last_studied_date, ef, interval FROM cards WHERE deck_id = ?")?;
+        let mut stmt = conn.prepare("SELECT id, question, answer, creation_time, last_studied_time, ef, interval FROM cards WHERE deck_id = ?")?;
         let card_iter = stmt.query_map(&[&deck_id.to_string()], |row| {
             let creation_time: String = row.get(3)?;
-            let last_studied_date: String = row.get(4)?;
-
             let creation_time = DateTime::parse_from_rfc3339(&creation_time).unwrap().naive_utc();
-            let last_studied_date = DateTime::parse_from_rfc3339(&last_studied_date).unwrap().naive_utc();
-
             let creation_time = OffsetDateTime::from_unix_timestamp(creation_time.timestamp()).unwrap().into();
-            let last_studied_date = OffsetDateTime::from_unix_timestamp(last_studied_date.timestamp()).unwrap().into();
+
+            let last_studied_time: Result<String> = row.get(4);
+
+            let last_studied_time = if let Ok(last_studied_time) = last_studied_time {
+                let last_studied_time = DateTime::parse_from_rfc3339(&last_studied_time).unwrap().naive_utc();
+
+                Some(OffsetDateTime::from_unix_timestamp(last_studied_time.timestamp()).unwrap().into())
+            } else {
+                None
+            };
 
             Ok(FlashCard {
                 id: Some(row.get(0)?),
@@ -67,10 +82,11 @@ impl FlashCard {
                 question: row.get(1)?,
                 answer: row.get(2)?,
                 creation_time,
-                last_studied_date,
+                last_studied_time,
                 performance_metrics: HashMap::new(),
                 ef: row.get(5)?,
-                interval: row.get(6)?
+                interval: row.get(6)?,
+                status: Status::New,
             })
         })?;
 
@@ -93,17 +109,22 @@ impl FlashCard {
     ///
     /// A `Result` containing the loaded card, or an error if the operation fails.
     pub fn load(id: i32, conn: &Connection) -> Result<FlashCard> {
-        let mut stmt = conn.prepare("SELECT id, deck_id, question, answer, creation_time, last_studied_date, ef, interval FROM cards WHERE id = ?")?;
+        let mut stmt = conn.prepare("SELECT id, deck_id, question, answer, creation_time, last_studied_time, ef, interval FROM cards WHERE id = ?")?;
 
         let deck = stmt.query_row(&[&id], |row| {
             let creation_time: String = row.get(4)?;
-            let last_studied_date: String = row.get(5)?;
-
             let creation_time = DateTime::parse_from_rfc3339(&creation_time).unwrap().naive_utc();
-            let last_studied_date = DateTime::parse_from_rfc3339(&last_studied_date).unwrap().naive_utc();
-
             let creation_time = OffsetDateTime::from_unix_timestamp(creation_time.timestamp()).unwrap().into();
-            let last_studied_date = OffsetDateTime::from_unix_timestamp(last_studied_date.timestamp()).unwrap().into();
+
+            let last_studied_time: Result<String> = row.get(5);
+
+            let last_studied_time = if let Ok(last_studied_time) = last_studied_time {
+                let last_studied_time = DateTime::parse_from_rfc3339(&last_studied_time).unwrap().naive_utc();
+
+                Some(OffsetDateTime::from_unix_timestamp(last_studied_time.timestamp()).unwrap().into())
+            } else {
+                None
+            };
 
             Ok(FlashCard {
                 id: Some(row.get(0)?),
@@ -111,10 +132,11 @@ impl FlashCard {
                 question: row.get(2)?,
                 answer: row.get(3)?,
                 creation_time,
-                last_studied_date,
+                last_studied_time,
                 performance_metrics: HashMap::new(),
                 ef: row.get(6)?,
-                interval: row.get(7)?
+                interval: row.get(7)?,
+                status: Status::New,
             })
         })?;
 
@@ -134,16 +156,13 @@ impl FlashCard {
     ///
     /// A `Result` indicating success or failure.
     pub fn save(&mut self, conn: &Connection) -> Result<()> {
-        let last_studied_date = DateTime::<Utc>::from(self.last_studied_date);
-
         match self.id {
             Some(id) => {
                 conn.execute(
-                    "UPDATE cards SET question = ?, answer = ?, last_studied_date = ?, deck_id = ?, ef = ?, interval = ? WHERE id = ?",
+                    "UPDATE cards SET question = ?, answer = ?, deck_id = ?, ef = ?, interval = ? WHERE id = ?",
                     &[
                         &self.question,
                         &self.answer,
-                        &last_studied_date.to_rfc3339(),
                         &id.to_string(),
                         &self.deck_id.to_string(),
                         &self.ef.to_string(),
@@ -153,12 +172,11 @@ impl FlashCard {
             }
             None => {
                 conn.execute(
-                    "INSERT INTO cards (question, answer, creation_time, last_studied_date, deck_id, ef, interval) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO cards (question, answer, creation_time, deck_id, ef, interval) VALUES (?, ?, ?, ?, ?, ?)",
                     &[
                         &self.question,
                         &self.answer,
                         &DateTime::<Utc>::from(self.creation_time).to_rfc3339(),
-                        &last_studied_date.to_rfc3339(),
                         &self.deck_id.to_string(),
                         &self.ef.to_string(),
                         &self.interval.to_string()
@@ -187,10 +205,35 @@ impl FlashCard {
 
         Ok(())
     }
+
+    pub fn get_status(&self) -> Status {
+        let current_time = SystemTime::now();
+        let interval_duration = Duration::from_secs((self.interval * 24.0 * 60.0 * 60.0) as u64);
+
+        if let Some(last_studied_time) = self.last_studied_time {
+            if let Ok(_) = current_time.duration_since(last_studied_time + interval_duration) {
+                Status::Due
+            } else {
+                Status::Learning
+            }
+        } else {
+            Status::New
+        }
+    }
+
+    pub fn is_due(&self) -> bool {
+        self.get_status() == Status::Due
+    }
+
+    pub fn is_learning(&self) -> bool {
+        self.get_status() == Status::Learning
+    }
 }
 
 #[cfg(test)]
 mod test {
+    use std::time::Duration;
+
     use crate::{db::init_db, Deck};
 
     use super::*;
@@ -255,5 +298,28 @@ mod test {
 
         let cards = FlashCard::get_all_cards_in_deck(deck.id.unwrap(), &conn).unwrap();
         assert_eq!(cards.len(), 0);
+    }
+
+    #[test]
+    fn get_status() {
+        let conn = Connection::open_in_memory().unwrap();
+        init_db(&conn).unwrap();
+
+        let mut deck = Deck::new("Test Deck");
+        deck.save(&conn).unwrap();
+
+        let mut card = FlashCard::new(deck.id.unwrap(), "What is the capital of France?", "Paris");
+
+        assert_eq!(card.get_status(), Status::New);
+
+        card.last_studied_time = Some(SystemTime::now());
+        card.save(&conn).unwrap();
+
+        assert_eq!(card.get_status(), Status::Learning);
+
+        card.interval = 0.2;
+        card.save(&conn).unwrap();
+
+        assert_eq!(card.get_status(), Status::Due);
     }
 }
