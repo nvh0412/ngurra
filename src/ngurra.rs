@@ -1,17 +1,15 @@
 use catppuccin::Flavour;
 use gpui::*;
 
-use crate::{state::{AppState, ViewState}, theme::Theme};
+use crate::{
+    state::{AppState, ViewState},
+    theme::Theme,
+};
 
-actions!(
-    ngurra,
-    [
-        Hide
-    ]
-);
+actions!(ngurra, [Hide]);
 
 pub struct Ngurra {
-    state: AppState
+    state: AppState,
 }
 
 impl Ngurra {
@@ -55,19 +53,25 @@ impl Render for Ngurra {
                     .flex()
                     .text_xs()
                     .child(
-                        div().mr_2().on_mouse_down(MouseButton::Left, |_ev, cx| {
-                            Theme::change(Flavour::Latte, cx)
-                        }).child("Light")
+                        div()
+                            .mr_2()
+                            .on_mouse_down(MouseButton::Left, |_ev, cx| {
+                                Theme::change(Flavour::Latte, cx)
+                            })
+                            .child("Light"),
                     )
                     .child(
-                        div().mr_2().on_mouse_down(MouseButton::Left, |_ev, cx| {
-                            Theme::change(Flavour::Mocha, cx)
-                        }).child("Dark")
-                    )
+                        div()
+                            .mr_2()
+                            .on_mouse_down(MouseButton::Left, |_ev, cx| {
+                                Theme::change(Flavour::Mocha, cx)
+                            })
+                            .child("Dark"),
+                    ),
             )
     }
 }
 
 pub fn init(cx: &mut AppContext) {
-    cx.on_action(|_: &Hide, cx| cx.hide() )
+    cx.on_action(|_: &Hide, cx| cx.hide())
 }

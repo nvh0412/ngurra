@@ -22,6 +22,15 @@ pub struct Theme {
     pub green: Hsla,
     pub red: Hsla,
     pub blue: Hsla,
+    pub text_disabled: Hsla,
+    pub subtext1: Hsla,
+    pub subtext0: Hsla,
+    pub overlay2: Hsla,
+    pub overlay1: Hsla,
+    pub overlay0: Hsla,
+    pub surface2: Hsla,
+    pub surface1: Hsla,
+    pub surface0: Hsla,
 }
 
 impl Global for Theme {}
@@ -38,6 +47,15 @@ impl From<FlavourColours> for Theme {
             green: color_to_hsla(colors.green),
             red: color_to_hsla(colors.red),
             blue: color_to_hsla(colors.blue),
+            subtext0: color_to_hsla(colors.subtext0),
+            subtext1: color_to_hsla(colors.subtext1),
+            text_disabled: color_to_hsla(colors.subtext0),
+            overlay0: color_to_hsla(colors.overlay0),
+            overlay1: color_to_hsla(colors.overlay1),
+            overlay2: color_to_hsla(colors.overlay2),
+            surface0: color_to_hsla(colors.surface0),
+            surface1: color_to_hsla(colors.surface1),
+            surface2: color_to_hsla(colors.surface2),
         }
     }
 }

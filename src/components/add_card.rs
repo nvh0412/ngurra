@@ -1,5 +1,7 @@
 use gpui::{div, prelude::*, Render, View, WindowContext};
 
+use crate::ui::{button::button::Button, clickable::Clickable};
+
 pub struct AddCardView;
 
 impl AddCardView {
@@ -14,6 +16,12 @@ impl Render for AddCardView {
             .mt_20()
             .flex()
             .justify_center()
-            .child("Add Card")
+            .child(
+                div()
+                    .flex()
+                    .child(Button::new("", "Click me").on_click(|event, cx| {
+                        log::info!("Button clicked: {:?}", event);
+                    })),
+            )
     }
 }

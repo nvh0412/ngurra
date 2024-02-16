@@ -5,6 +5,7 @@ mod ngurra;
 mod repositories;
 mod state;
 mod theme;
+mod ui;
 
 use db::init_db;
 use gpui::*;

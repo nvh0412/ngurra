@@ -9,21 +9,20 @@ pub struct TabBarContainer {
     pub view: Rc<RefCell<View<TabBarView>>>,
 }
 
-pub struct TabBarView {
-}
+pub struct TabBarView {}
 
 impl TabBarContainer {
     pub fn new(cx: &mut WindowContext) -> Self {
         let view = TabBarView::init(cx);
-        Self { view: Rc::new(RefCell::new(view)) }
+        Self {
+            view: Rc::new(RefCell::new(view)),
+        }
     }
 }
 
 impl TabBarView {
     pub fn init(cx: &mut WindowContext) -> View<Self> {
-        let view = cx.new_view(|cx| {
-            TabBarView {}
-        });
+        let view = cx.new_view(|cx| TabBarView {});
 
         view
     }
@@ -38,8 +37,7 @@ pub enum TabEvent {
 impl EventEmitter<TabEvent> for TabBarView {}
 
 impl Render for TabBarView {
-    fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl IntoElement {
-    }
+    fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl IntoElement {}
 }
 
 impl RenderOnce for TabBarContainer {
@@ -75,7 +73,7 @@ impl RenderOnce for TabBarContainer {
                                     cx.emit(TabEvent::Deck);
                                     cx.notify();
                                 })
-                            })
+                            }),
                     )
                     .child(
                         div()
@@ -92,7 +90,7 @@ impl RenderOnce for TabBarContainer {
                                     cx.emit(TabEvent::Add);
                                     cx.notify();
                                 })
-                            })
+                            }),
                     )
                     .child(
                         div()
@@ -109,9 +107,8 @@ impl RenderOnce for TabBarContainer {
                                     cx.emit(TabEvent::Browse);
                                     cx.notify();
                                 })
-                            }
-                    )
-                )
+                            }),
+                    ),
             )
     }
 }
