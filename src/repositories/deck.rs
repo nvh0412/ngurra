@@ -39,6 +39,13 @@ pub struct Deck {
     pub cards: Vec<FlashCard>,
 }
 
+pub struct DeckStat {
+    pub id: Option<i32>,
+    pub due: i32,
+    pub learning: i32,
+    pub new: i32,
+}
+
 impl Deck {
     /// Creates a new deck with the specified name.
     ///
@@ -189,7 +196,14 @@ impl Deck {
         Ok(())
     }
 
-    pub fn get_card_stats(&self) -> (i32, i32, i32) {
+    /// Retrieves the statistics for the deck.
+    ///
+    /// The statistics include the number of due, learning, and new cards in the deck.
+    ///
+    /// # Returns
+    ///
+    /// DeckStat - The statistics for the deck.
+    pub fn get_deck_stats(&self) -> DeckStat {
         let mut due = 0;
         let mut new = 0;
         let mut learning = 0;
@@ -204,12 +218,19 @@ impl Deck {
             }
         }
 
-        (due, learning, new)
+        DeckStat {
+            id: self.id,
+            due,
+            learning,
+            new,
+        }
     }
 }
 
 #[cfg(test)]
 mod test {
+    use std::time::Duration;
+
     use crate::db::init_db;
 
     use super::*;
@@ -265,5 +286,27 @@ mod test {
 
         assert!(loaded_deck.is_err());
         assert_eq!(loaded_deck.err().unwrap().to_string(), "Query returned no rows");
+    }
+
+    #[test]
+    fn get_deck_stats() {
+        let mut deck = Deck::new("Test Deck");
+
+        let mut due_card = FlashCard::new(1, "Front", "Back", Some(0.2));
+        due_card.set_last_studied_time(SystemTime::now() - Duration::from_secs(24 * 60 * 60 * 2));
+        deck.cards.push(due_card);
+
+        let mut learning_card = FlashCard::new(1, "Front", "Back", None);
+        learning_card.set_last_studied_time(SystemTime::now());
+        deck.cards.push(learning_card);
+
+        let new_card = FlashCard::new(1, "Front", "Back", None);
+        deck.cards.push(new_card);
+
+        let stats = deck.get_deck_stats();
+
+        assert_eq!(stats.new, 1);
+        assert_eq!(stats.learning, 1);
+        assert_eq!(stats.due, 1);
     }
 }

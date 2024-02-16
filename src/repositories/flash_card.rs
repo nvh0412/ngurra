@@ -26,7 +26,7 @@ pub struct FlashCard {
 }
 
 impl FlashCard {
-    pub fn new(deck_id: i32, question: &str, answer: &str) -> FlashCard {
+    pub fn new(deck_id: i32, question: &str, answer: &str, ef: Option<f32>) -> FlashCard {
         FlashCard {
             id: None,
             deck_id,
@@ -35,10 +35,14 @@ impl FlashCard {
             creation_time: SystemTime::now(),
             last_studied_time: None,
             performance_metrics: HashMap::new(),
-            ef: 2.5,
+            ef: ef.unwrap_or(2.5),
             interval: 1.0,
             status: Status::New
         }
+    }
+
+    pub fn set_last_studied_time(&mut self, time: SystemTime) {
+        self.last_studied_time = Some(time);
     }
 
     pub fn get_question(&self) -> &str {
@@ -211,7 +215,7 @@ impl FlashCard {
         let interval_duration = Duration::from_secs((self.interval * 24.0 * 60.0 * 60.0) as u64);
 
         if let Some(last_studied_time) = self.last_studied_time {
-            if let Ok(_) = current_time.duration_since(last_studied_time + interval_duration) {
+            if current_time > last_studied_time + interval_duration {
                 Status::Due
             } else {
                 Status::Learning
@@ -232,8 +236,6 @@ impl FlashCard {
 
 #[cfg(test)]
 mod test {
-    use std::time::Duration;
-
     use crate::{db::init_db, Deck};
 
     use super::*;
@@ -246,7 +248,7 @@ mod test {
         let mut deck = Deck::new("Test Deck");
         deck.save(&conn).unwrap();
 
-        let mut card = FlashCard::new(deck.id.unwrap(), "What is the capital of France?", "Paris");
+        let mut card = FlashCard::new(deck.id.unwrap(), "What is the capital of France?", "Paris", None);
         card.save(&conn).unwrap();
 
         let cards = FlashCard::get_all_cards_in_deck(deck.id.unwrap(), &conn).unwrap();
@@ -261,7 +263,7 @@ mod test {
         let mut deck = Deck::new("Test Deck");
         deck.save(&conn).unwrap();
 
-        let mut card = FlashCard::new(deck.id.unwrap(), "What is the capital of France?", "Paris");
+        let mut card = FlashCard::new(deck.id.unwrap(), "What is the capital of France?", "Paris", None);
         card.save(&conn).unwrap();
 
         let loaded_card = FlashCard::load(card.id.unwrap(), &conn).unwrap();
@@ -277,7 +279,7 @@ mod test {
         let mut deck = Deck::new("Test Deck");
         deck.save(&conn).unwrap();
 
-        let mut card = FlashCard::new(deck.id.unwrap(), "What is the capital of France?", "Paris");
+        let mut card = FlashCard::new(deck.id.unwrap(), "What is the capital of France?", "Paris", None);
         card.save(&conn).unwrap();
 
         assert_eq!(card.id, Some(1));
@@ -291,7 +293,7 @@ mod test {
         let mut deck = Deck::new("Test Deck");
         deck.save(&conn).unwrap();
 
-        let mut card = FlashCard::new(deck.id.unwrap(), "What is the capital of France?", "Paris");
+        let mut card = FlashCard::new(deck.id.unwrap(), "What is the capital of France?", "Paris", None);
         card.save(&conn).unwrap();
 
         card.delete(&conn).unwrap();
@@ -308,7 +310,7 @@ mod test {
         let mut deck = Deck::new("Test Deck");
         deck.save(&conn).unwrap();
 
-        let mut card = FlashCard::new(deck.id.unwrap(), "What is the capital of France?", "Paris");
+        let mut card = FlashCard::new(deck.id.unwrap(), "What is the capital of France?", "Paris", None);
 
         assert_eq!(card.get_status(), Status::New);
 
@@ -317,6 +319,7 @@ mod test {
 
         assert_eq!(card.get_status(), Status::Learning);
 
+        card.last_studied_time = Some(SystemTime::now() - Duration::from_secs(60 * 60 * 24 * 2));
         card.interval = 0.2;
         card.save(&conn).unwrap();
 
