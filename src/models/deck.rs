@@ -3,13 +3,21 @@ use rusqlite::Connection;
 use crate::{Deck, FlashCard};
 
 pub fn get_decks(conn: &Connection) -> Vec<Deck> {
-    let mut decks = Deck::get_all_decks(&conn).unwrap();
+    let conn = Connection::open("anki-rs.db").unwrap();
+    let decks_res = Deck::get_all_decks(&conn);
 
-    decks.iter_mut().for_each(|d| {
-        d.cards = FlashCard::get_all_cards_in_deck(d.id.unwrap(), &conn).unwrap();
-    });
-
-    decks
+    match decks_res {
+        Ok(mut decks) => {
+            decks.iter_mut().for_each(|d| {
+                d.cards = FlashCard::get_all_cards_in_deck(d.id.unwrap(), &conn).unwrap();
+            });
+            decks
+        }
+        Err(e) => {
+            eprintln!("Error getting decks: {}", e);
+            vec![]
+        }
+    }
 }
 
 #[cfg(test)]

@@ -1,15 +1,17 @@
-use std::{collections::HashMap, time::{Duration, SystemTime}};
+use std::{
+    collections::HashMap,
+    time::{Duration, SystemTime},
+};
 
 use chrono::{DateTime, Utc};
 use rusqlite::{Connection, Result};
 use time::OffsetDateTime;
 
-
 #[derive(PartialEq, Debug)]
 pub enum Status {
     New,
     Learning,
-    Due
+    Due,
 }
 
 pub struct FlashCard {
@@ -22,7 +24,7 @@ pub struct FlashCard {
     ef: f32,
     interval: f64,
     status: Status,
-    performance_metrics: HashMap<String, i32>
+    performance_metrics: HashMap<String, i32>,
 }
 
 impl FlashCard {
@@ -37,7 +39,7 @@ impl FlashCard {
             performance_metrics: HashMap::new(),
             ef: ef.unwrap_or(2.5),
             interval: 1.0,
-            status: Status::New
+            status: Status::New,
         }
     }
 
@@ -67,15 +69,25 @@ impl FlashCard {
         let mut stmt = conn.prepare("SELECT id, question, answer, creation_time, last_studied_time, ef, interval FROM cards WHERE deck_id = ?")?;
         let card_iter = stmt.query_map(&[&deck_id.to_string()], |row| {
             let creation_time: String = row.get(3)?;
-            let creation_time = DateTime::parse_from_rfc3339(&creation_time).unwrap().naive_utc();
-            let creation_time = OffsetDateTime::from_unix_timestamp(creation_time.timestamp()).unwrap().into();
+            let creation_time = DateTime::parse_from_rfc3339(&creation_time)
+                .unwrap()
+                .naive_utc();
+            let creation_time = OffsetDateTime::from_unix_timestamp(creation_time.timestamp())
+                .unwrap()
+                .into();
 
             let last_studied_time: Result<String> = row.get(4);
 
             let last_studied_time = if let Ok(last_studied_time) = last_studied_time {
-                let last_studied_time = DateTime::parse_from_rfc3339(&last_studied_time).unwrap().naive_utc();
+                let last_studied_time = DateTime::parse_from_rfc3339(&last_studied_time)
+                    .unwrap()
+                    .naive_utc();
 
-                Some(OffsetDateTime::from_unix_timestamp(last_studied_time.timestamp()).unwrap().into())
+                Some(
+                    OffsetDateTime::from_unix_timestamp(last_studied_time.timestamp())
+                        .unwrap()
+                        .into(),
+                )
             } else {
                 None
             };
@@ -117,15 +129,25 @@ impl FlashCard {
 
         let deck = stmt.query_row(&[&id], |row| {
             let creation_time: String = row.get(4)?;
-            let creation_time = DateTime::parse_from_rfc3339(&creation_time).unwrap().naive_utc();
-            let creation_time = OffsetDateTime::from_unix_timestamp(creation_time.timestamp()).unwrap().into();
+            let creation_time = DateTime::parse_from_rfc3339(&creation_time)
+                .unwrap()
+                .naive_utc();
+            let creation_time = OffsetDateTime::from_unix_timestamp(creation_time.timestamp())
+                .unwrap()
+                .into();
 
             let last_studied_time: Result<String> = row.get(5);
 
             let last_studied_time = if let Ok(last_studied_time) = last_studied_time {
-                let last_studied_time = DateTime::parse_from_rfc3339(&last_studied_time).unwrap().naive_utc();
+                let last_studied_time = DateTime::parse_from_rfc3339(&last_studied_time)
+                    .unwrap()
+                    .naive_utc();
 
-                Some(OffsetDateTime::from_unix_timestamp(last_studied_time.timestamp()).unwrap().into())
+                Some(
+                    OffsetDateTime::from_unix_timestamp(last_studied_time.timestamp())
+                        .unwrap()
+                        .into(),
+                )
             } else {
                 None
             };
@@ -248,7 +270,12 @@ mod test {
         let mut deck = Deck::new("Test Deck");
         deck.save(&conn).unwrap();
 
-        let mut card = FlashCard::new(deck.id.unwrap(), "What is the capital of France?", "Paris", None);
+        let mut card = FlashCard::new(
+            deck.id.unwrap(),
+            "What is the capital of France?",
+            "Paris",
+            None,
+        );
         card.save(&conn).unwrap();
 
         let cards = FlashCard::get_all_cards_in_deck(deck.id.unwrap(), &conn).unwrap();
@@ -263,7 +290,12 @@ mod test {
         let mut deck = Deck::new("Test Deck");
         deck.save(&conn).unwrap();
 
-        let mut card = FlashCard::new(deck.id.unwrap(), "What is the capital of France?", "Paris", None);
+        let mut card = FlashCard::new(
+            deck.id.unwrap(),
+            "What is the capital of France?",
+            "Paris",
+            None,
+        );
         card.save(&conn).unwrap();
 
         let loaded_card = FlashCard::load(card.id.unwrap(), &conn).unwrap();
@@ -279,7 +311,12 @@ mod test {
         let mut deck = Deck::new("Test Deck");
         deck.save(&conn).unwrap();
 
-        let mut card = FlashCard::new(deck.id.unwrap(), "What is the capital of France?", "Paris", None);
+        let mut card = FlashCard::new(
+            deck.id.unwrap(),
+            "What is the capital of France?",
+            "Paris",
+            None,
+        );
         card.save(&conn).unwrap();
 
         assert_eq!(card.id, Some(1));
@@ -293,7 +330,12 @@ mod test {
         let mut deck = Deck::new("Test Deck");
         deck.save(&conn).unwrap();
 
-        let mut card = FlashCard::new(deck.id.unwrap(), "What is the capital of France?", "Paris", None);
+        let mut card = FlashCard::new(
+            deck.id.unwrap(),
+            "What is the capital of France?",
+            "Paris",
+            None,
+        );
         card.save(&conn).unwrap();
 
         card.delete(&conn).unwrap();
@@ -310,7 +352,12 @@ mod test {
         let mut deck = Deck::new("Test Deck");
         deck.save(&conn).unwrap();
 
-        let mut card = FlashCard::new(deck.id.unwrap(), "What is the capital of France?", "Paris", None);
+        let mut card = FlashCard::new(
+            deck.id.unwrap(),
+            "What is the capital of France?",
+            "Paris",
+            None,
+        );
 
         assert_eq!(card.get_status(), Status::New);
 

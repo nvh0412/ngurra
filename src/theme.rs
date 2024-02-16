@@ -18,7 +18,10 @@ pub struct Theme {
     pub crust: Hsla,
     pub text: Hsla,
     pub base: Hsla,
-    pub mantle: Hsla
+    pub mantle: Hsla,
+    pub green: Hsla,
+    pub red: Hsla,
+    pub blue: Hsla,
 }
 
 impl Global for Theme {}
@@ -31,7 +34,10 @@ impl From<FlavourColours> for Theme {
             crust: color_to_hsla(colors.crust),
             text: color_to_hsla(colors.text),
             base: color_to_hsla(colors.base),
-            mantle: color_to_hsla(colors.mantle)
+            mantle: color_to_hsla(colors.mantle),
+            green: color_to_hsla(colors.green),
+            red: color_to_hsla(colors.red),
+            blue: color_to_hsla(colors.blue),
         }
     }
 }
