@@ -74,7 +74,7 @@ impl RenderOnce for Button {
                 .border_1()
                 .border_color(theme.crust)
                 .items_center()
-                .rounded_md()
+                .rounded_lg()
                 .px_3()
                 .py_2()
                 .child(
@@ -85,7 +85,7 @@ impl RenderOnce for Button {
                         .justify_between()
                         .text_color(text_color)
                         .text_sm()
-                        .font_weight(FontWeight::SEMIBOLD)
+                        .font_weight(FontWeight::BOLD)
                         .child(self.label),
                 ),
         )
