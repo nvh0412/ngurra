@@ -1,7 +1,8 @@
 use gpui::{
-    fill, green, point, quad, relative, size, Bounds, ContentMask, Corners, Edges, Element,
-    ElementContext, ElementInputHandler, Entity, InteractiveBounds, IntoElement, KeyContext,
-    Pixels, Point, Size, Style, View, WindowContext,
+    fill, font, green, point, quad, relative, size, white, Bounds, ContentMask, Corners,
+    DispatchPhase, Edges, Element, ElementContext, ElementInputHandler, Entity, InteractiveBounds,
+    IntoElement, KeyContext, ModifiersChangedEvent, Pixels, Point, Size, Style, TextRun, View,
+    WindowContext,
 };
 
 use crate::theme::Theme;
@@ -36,6 +37,23 @@ impl EditorElement {
     }
 
     fn register_actions(&self, cx: &mut WindowContext) {}
+
+    fn register_key_listeners(&self, cx: &mut ElementContext, text_bounds: Bounds<Pixels>) {
+        let stacking_order = cx.stacking_order().clone();
+
+        cx.on_key_event({
+            let editor = self.editor.clone();
+            move |event: &ModifiersChangedEvent, phase, cx| {
+                if phase != DispatchPhase::Bubble {
+                    return;
+                }
+
+                editor.update(cx, |editor, cx| {
+                    println!("Modifiers changed: {:?}", event.modifiers);
+                })
+            }
+        })
+    }
 
     fn paint_background(
         &self,
@@ -88,7 +106,21 @@ impl EditorElement {
                     ))
                 });
 
-                let cursor = Cursor::new(content_origin, CursorShape::Bar, text_bounds.size.height);
+                let cursor = Cursor::new(content_origin, text_bounds.size.height);
+
+                let run = TextRun {
+                    len: "input here".len(),
+                    font: font("Helvetica"),
+                    color: white(),
+                    background_color: None,
+                    underline: Default::default(),
+                };
+
+                cx.text_system()
+                    .shape_line("input here".to_string().into(), Pixels(16.0), &[run])
+                    .unwrap()
+                    .paint(content_origin, text_bounds.size.height, cx);
+
                 // Draw the cursor
                 cx.with_z_index(1, |cx| {
                     cursor.paint(content_origin, cx);
@@ -160,19 +192,24 @@ impl Element for EditorElement {
                         size: layout.text_size,
                     };
 
-                    cx.with_key_dispatch(Some(KeyContext::default()), None, |_a, cx| {
-                        self.register_actions(cx);
+                    cx.with_key_dispatch(
+                        Some(KeyContext::default()),
+                        Some(focus_handle.clone()),
+                        |_, cx| {
+                            self.register_actions(cx);
 
-                        cx.with_content_mask(Some(ContentMask { bounds }), |cx| {
-                            cx.handle_input(
-                                &focus_handle,
-                                ElementInputHandler::new(bounds, self.editor.clone()),
-                            );
+                            cx.with_content_mask(Some(ContentMask { bounds }), |cx| {
+                                self.register_key_listeners(cx, text_bounds);
+                                cx.handle_input(
+                                    &focus_handle,
+                                    ElementInputHandler::new(bounds, self.editor.clone()),
+                                );
 
-                            self.paint_background(text_bounds, &layout, cx);
-                            self.paint_text(text_bounds, &mut layout, cx);
-                        })
-                    })
+                                self.paint_background(text_bounds, &layout, cx);
+                                self.paint_text(text_bounds, &mut layout, cx);
+                            })
+                        },
+                    )
                 },
             )
         })

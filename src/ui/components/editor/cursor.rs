@@ -6,20 +6,17 @@ use crate::theme::{self, Theme};
 pub enum CursorShape {
     #[default]
     Bar,
-    Underscore,
 }
 
 pub struct Cursor {
     origin: Point<Pixels>,
-    shape: CursorShape,
     line_height: Pixels,
 }
 
 impl Cursor {
-    pub fn new(origin: gpui::Point<Pixels>, shape: CursorShape, line_height: Pixels) -> Self {
+    pub fn new(origin: gpui::Point<Pixels>, line_height: Pixels) -> Self {
         Self {
             origin,
-            shape,
             line_height,
         }
     }

@@ -1,9 +1,13 @@
+use std::time::Duration;
+
 use gpui::{
-    AppContext, FocusHandle, FocusableView, IntoElement, Pixels, Point, Render, ViewContext,
-    ViewInputHandler,
+    AppContext, Context, FocusHandle, FocusableView, IntoElement, Model, Pixels, Point, Render,
+    Subscription, ViewContext, ViewInputHandler,
 };
 
-use super::element::EditorElement;
+use super::{blink_manager::BlinkManager, element::EditorElement};
+
+const CURSOR_BLINK_INTERVAL: Duration = Duration::from_millis(500);
 
 pub enum EditorMode {
     SingleLine,
@@ -13,16 +17,41 @@ pub enum EditorMode {
 pub struct Editor {
     pub mode: EditorMode,
     focus_handle: FocusHandle,
+    blink_manager: Model<BlinkManager>,
     pub pixel_position_of_newest_cursor: Option<Point<Pixels>>,
+    _subscriptions: Vec<Subscription>,
 }
 
 impl Editor {
     pub fn single_line(cx: &mut ViewContext<Self>) -> Editor {
+        let blink_manager = cx.new_model(|cx| BlinkManager::new(CURSOR_BLINK_INTERVAL, cx));
+
+        let focus_handle = cx.focus_handle();
+        cx.on_focus(&focus_handle, Self::handle_focus).detach();
+
         Editor {
             mode: EditorMode::SingleLine,
             focus_handle: cx.focus_handle(),
             pixel_position_of_newest_cursor: None,
+            blink_manager: blink_manager.clone(),
+            _subscriptions: vec![
+                cx.observe(&blink_manager, |_, _, cx| cx.notify()),
+                cx.observe_window_activation(|e, cx| {
+                    let active = cx.is_window_active();
+                    e.blink_manager.update(cx, |b, cx| {
+                        if active {
+                            b.enable(cx);
+                        } else {
+                            b.show_cursor(cx);
+                        }
+                    });
+                }),
+            ],
         }
+    }
+
+    pub fn handle_focus(&mut self, cx: &mut ViewContext<Self>) {
+        self.blink_manager.update(cx, BlinkManager::enable);
     }
 }
 
@@ -68,7 +97,7 @@ impl ViewInputHandler for Editor {
         text: &str,
         cx: &mut ViewContext<Self>,
     ) {
-        todo!()
+        // self.handle_input(text, cx);
     }
 
     fn replace_and_mark_text_in_range(
