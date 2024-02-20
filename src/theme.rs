@@ -31,6 +31,7 @@ pub struct Theme {
     pub surface2: Hsla,
     pub surface1: Hsla,
     pub surface0: Hsla,
+    pub lavender: Hsla,
 }
 
 impl Global for Theme {}
@@ -56,6 +57,7 @@ impl From<FlavourColours> for Theme {
             surface0: color_to_hsla(colors.surface0),
             surface1: color_to_hsla(colors.surface1),
             surface2: color_to_hsla(colors.surface2),
+            lavender: color_to_hsla(colors.lavender),
         }
     }
 }

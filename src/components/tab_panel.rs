@@ -1,30 +1,31 @@
 use std::rc::Rc;
 
 use crate::state::StateView;
-use gpui::{prelude::*, AnyView, ViewContext};
+use gpui::{div, prelude::*, AnyView, ViewContext};
 
-use super::{add_card::AddCardView, card_browser::CardBrowserView, deck_list::DeckListView, tab_bar_container::{TabBarContainer, TabEvent}};
+use super::{
+    add_card::AddCardView,
+    card_browser::CardBrowserView,
+    deck_list::DeckListView,
+    tab_bar_container::{TabBarContainer, TabEvent},
+};
 
 pub struct TabPanelBuilder;
 
 pub struct TabPanel {
-    content: AnyView
+    content: AnyView,
 }
 
 impl Render for TabPanel {
     fn render(&mut self, _cx: &mut ViewContext<Self>) -> impl IntoElement {
-        self.content.clone()
+        div().size_full().child(self.content.clone())
     }
 }
 
 impl StateView for TabPanelBuilder {
-    fn build(
-        &self,
-        tabbar: &TabBarContainer,
-        cx: &mut gpui::WindowContext
-    ) -> gpui::AnyView {
+    fn build(&self, tabbar: &TabBarContainer, cx: &mut gpui::WindowContext) -> gpui::AnyView {
         let panel = TabPanel {
-            content: DeckListView::view(cx).into()
+            content: DeckListView::view(cx).into(),
         };
 
         let tab_view = Rc::clone(&tabbar.view);
@@ -32,22 +33,16 @@ impl StateView for TabPanelBuilder {
         cx.new_view(|cx| {
             cx.subscribe(
                 &*tab_view.borrow_mut(),
-                move |subscriber: &mut TabPanel, _emitter, event, cx| {
-                    match event {
-                        TabEvent::Deck => {
-                            subscriber.content = DeckListView::view(cx).into()
-                        }
-                        TabEvent::Add => {
-                            subscriber.content = AddCardView::view(cx).into()
-                        }
-                        TabEvent::Browse => {
-                            subscriber.content = CardBrowserView::view(cx).into()
-                        }
-                    }
-                }
-            ).detach();
+                move |subscriber: &mut TabPanel, _emitter, event, cx| match event {
+                    TabEvent::Deck => subscriber.content = DeckListView::view(cx).into(),
+                    TabEvent::Add => subscriber.content = AddCardView::view(cx).into(),
+                    TabEvent::Browse => subscriber.content = CardBrowserView::view(cx).into(),
+                },
+            )
+            .detach();
 
             panel
-        }).into()
+        })
+        .into()
     }
 }

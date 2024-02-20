@@ -108,19 +108,6 @@ impl EditorElement {
 
                 let cursor = Cursor::new(content_origin, text_bounds.size.height);
 
-                let run = TextRun {
-                    len: "input here".len(),
-                    font: font("Helvetica"),
-                    color: white(),
-                    background_color: None,
-                    underline: Default::default(),
-                };
-
-                cx.text_system()
-                    .shape_line("input here".to_string().into(), Pixels(16.0), &[run])
-                    .unwrap()
-                    .paint(content_origin, text_bounds.size.height, cx);
-
                 // Draw the cursor
                 cx.with_z_index(1, |cx| {
                     cursor.paint(content_origin, cx);

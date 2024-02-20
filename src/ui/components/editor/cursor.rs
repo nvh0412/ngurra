@@ -25,8 +25,8 @@ impl Cursor {
         let theme = cx.global::<Theme>();
         // Only support bar cursor for now
         let bounds = Bounds {
-            origin: self.origin + point(Pixels(12.0), Pixels(6.0)),
-            size: size(px(2.0), self.line_height - px(12.0)),
+            origin: self.origin + point(Pixels(12.0), Pixels(8.0)),
+            size: size(px(2.0), self.line_height - px(16.0)),
         };
 
         let cursor = fill(bounds, theme.blue);

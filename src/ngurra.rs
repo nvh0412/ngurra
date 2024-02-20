@@ -31,7 +31,6 @@ impl Render for Ngurra {
 
         div()
             .flex()
-            .flex_col()
             .size_full()
             .bg(theme.base)
             .font(theme.font_mono.clone())
@@ -51,23 +50,22 @@ impl Render for Ngurra {
                     .py_2()
                     .text_color(theme.text)
                     .flex()
-                    .text_xs()
-                    .child(
-                        div()
-                            .mr_2()
-                            .on_mouse_down(MouseButton::Left, |_ev, cx| {
-                                Theme::change(Flavour::Latte, cx)
-                            })
-                            .child("Light"),
-                    )
-                    .child(
-                        div()
-                            .mr_2()
-                            .on_mouse_down(MouseButton::Left, |_ev, cx| {
-                                Theme::change(Flavour::Mocha, cx)
-                            })
-                            .child("Dark"),
-                    ),
+                    .text_xs(), // .child(
+                                //     div()
+                                //         .mr_2()
+                                //         .on_mouse_down(MouseButton::Left, |_ev, cx| {
+                                //             Theme::change(Flavour::Latte, cx)
+                                //         })
+                                //         .child("Light"),
+                                // )
+                                // .child(
+                                //     div()
+                                //         .mr_2()
+                                //         .on_mouse_down(MouseButton::Left, |_ev, cx| {
+                                //             Theme::change(Flavour::Mocha, cx)
+                                //         })
+                                //         .child("Dark"),
+                                // ),
             )
     }
 }

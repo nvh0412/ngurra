@@ -4,6 +4,8 @@ use gpui::{div, prelude::*, EventEmitter, Render, View, WindowContext};
 
 use crate::theme::Theme;
 
+use super::shared::icon::Icon;
+
 #[derive(IntoElement, Clone)]
 pub struct TabBarContainer {
     pub view: Rc<RefCell<View<TabBarView>>>,
@@ -49,66 +51,51 @@ impl RenderOnce for TabBarContainer {
         let view_clone3 = Rc::clone(&self.view);
 
         div()
-            .w_full()
-            .flex()
-            .justify_center()
+            .bg(theme.mantle)
             .border_t_1()
-            .border_color(theme.crust)
+            .flex()
+            .flex_col()
+            .p_1()
             .child(
                 div()
-                    .bg(theme.mantle)
-                    .flex()
-                    .child(
-                        div()
-                            .group("tab_bar")
-                            .flex()
-                            .border_1()
-                            .border_color(theme.crust)
-                            .px_4()
-                            .py_2()
-                            .text_color(theme.text)
-                            .child("Deck")
-                            .on_mouse_down(gpui::MouseButton::Left, move |_ev, cx| {
-                                view_clone1.borrow_mut().update(cx, |e, cx| {
-                                    cx.emit(TabEvent::Deck);
-                                    cx.notify();
-                                })
-                            }),
-                    )
-                    .child(
-                        div()
-                            .group("tab_bar")
-                            .flex()
-                            .border_1()
-                            .border_color(theme.crust)
-                            .px_4()
-                            .py_2()
-                            .text_color(theme.text)
-                            .child("Add")
-                            .on_mouse_down(gpui::MouseButton::Left, move |_ev, cx| {
-                                view_clone2.borrow_mut().update(cx, |e, cx| {
-                                    cx.emit(TabEvent::Add);
-                                    cx.notify();
-                                })
-                            }),
-                    )
-                    .child(
-                        div()
-                            .group("tab_bar")
-                            .flex()
-                            .border_1()
-                            .border_color(theme.crust)
-                            .px_4()
-                            .py_2()
-                            .text_color(theme.text)
-                            .child("Browse")
-                            .on_mouse_down(gpui::MouseButton::Left, move |_ev, cx| {
-                                view_clone3.borrow_mut().update(cx, |e, cx| {
-                                    cx.emit(TabEvent::Browse);
-                                    cx.notify();
-                                })
-                            }),
-                    ),
+                    .group("tab_bar")
+                    .px_2()
+                    .py_2()
+                    .text_color(theme.text)
+                    .child(Icon::BookText)
+                    .on_mouse_down(gpui::MouseButton::Left, move |_ev, cx| {
+                        view_clone1.borrow_mut().update(cx, |e, cx| {
+                            cx.emit(TabEvent::Deck);
+                            cx.notify();
+                        })
+                    }),
+            )
+            .child(
+                div()
+                    .group("tab_bar")
+                    .px_2()
+                    .py_2()
+                    .text_color(theme.text)
+                    .child(Icon::FilePlus)
+                    .on_mouse_down(gpui::MouseButton::Left, move |_ev, cx| {
+                        view_clone2.borrow_mut().update(cx, |e, cx| {
+                            cx.emit(TabEvent::Add);
+                            cx.notify();
+                        })
+                    }),
+            )
+            .child(
+                div()
+                    .group("tab_bar")
+                    .px_2()
+                    .py_2()
+                    .child(Icon::FileSearch)
+                    .on_mouse_down(gpui::MouseButton::Left, move |_ev, cx| {
+                        view_clone3.borrow_mut().update(cx, |e, cx| {
+                            cx.emit(TabEvent::Browse);
+                            cx.notify();
+                        })
+                    }),
             )
     }
 }

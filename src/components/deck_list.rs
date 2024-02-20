@@ -1,4 +1,4 @@
-use gpui::{div, prelude::*, AnyView, Render, View, WindowContext};
+use gpui::{div, green, prelude::*, AnyView, Render, View, WindowContext};
 use rusqlite::Connection;
 
 use crate::{models::deck::get_decks, theme::Theme, Deck};
@@ -21,54 +21,61 @@ impl Render for DeckListView {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::prelude::IntoElement {
         let theme: &Theme = cx.global();
 
-        div().mt_20().flex().justify_center().child(
-            div()
-                .mt_2()
-                .border_1()
-                .border_color(theme.crust)
-                .rounded_xl()
-                .border_r_1()
-                .text_color(theme.text)
-                .p_3()
-                .child(
-                    div()
-                        .flex()
-                        .flex_row()
-                        .text_sm()
-                        .child(div().px_2().min_w_80().child(format!("Deck")))
-                        .child(
-                            div()
-                                .min_w_20()
-                                .flex()
-                                .justify_center()
-                                .child(format!("New")),
-                        )
-                        .child(
-                            div()
-                                .min_w_20()
-                                .flex()
-                                .justify_center()
-                                .child(format!("Learn")),
-                        )
-                        .child(
-                            div()
-                                .min_w_20()
-                                .flex()
-                                .justify_center()
-                                .child(format!("Due")),
-                        )
-                        .pb_2()
-                        .border_b_1()
-                        .border_color(theme.crust)
-                        .mb_2(),
-                )
-                .children(
-                    self.get_all_decks()
-                        .into_iter()
-                        .map(|deck| HocListItem::init(cx.new_view(|_| ListItem::new(deck)).into()))
-                        .collect::<Vec<_>>(),
-                ),
-        )
+        div()
+            .size_full()
+            .flex()
+            .justify_center()
+            .items_center()
+            .child(
+                div()
+                    .mt_2()
+                    .border_1()
+                    .border_color(theme.crust)
+                    .rounded_xl()
+                    .border_r_1()
+                    .text_color(theme.text)
+                    .p_3()
+                    .child(
+                        div()
+                            .flex()
+                            .flex_row()
+                            .text_sm()
+                            .child(div().px_2().min_w_80().child(format!("Deck")))
+                            .child(
+                                div()
+                                    .min_w_20()
+                                    .flex()
+                                    .justify_center()
+                                    .child(format!("New")),
+                            )
+                            .child(
+                                div()
+                                    .min_w_20()
+                                    .flex()
+                                    .justify_center()
+                                    .child(format!("Learn")),
+                            )
+                            .child(
+                                div()
+                                    .min_w_20()
+                                    .flex()
+                                    .justify_center()
+                                    .child(format!("Due")),
+                            )
+                            .pb_2()
+                            .border_b_1()
+                            .border_color(theme.crust)
+                            .mb_2(),
+                    )
+                    .children(
+                        self.get_all_decks()
+                            .into_iter()
+                            .map(|deck| {
+                                HocListItem::init(cx.new_view(|_| ListItem::new(deck)).into())
+                            })
+                            .collect::<Vec<_>>(),
+                    ),
+            )
     }
 }
 

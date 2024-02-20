@@ -1,3 +1,4 @@
+mod assets;
 mod components;
 mod db;
 mod models;
@@ -16,7 +17,7 @@ use rusqlite::Connection;
 
 use std::io::{IsTerminal, Write};
 
-use crate::theme::Theme;
+use crate::{assets::Assets, theme::Theme};
 
 fn main() {
     if let Ok(conn) = Connection::open("anki-rs.db") {
@@ -28,7 +29,7 @@ fn main() {
     init_logger();
 
     log::info!("========== starting Ngurra ==========");
-    App::new().run(|cx: &mut AppContext| {
+    App::new().with_assets(Assets).run(|cx: &mut AppContext| {
         ngurra::init(cx);
         Theme::init(cx);
 
