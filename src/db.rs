@@ -5,10 +5,9 @@ pub fn init_db(conn: &Connection) -> Result<()> {
         "CREATE TABLE IF NOT EXISTS decks (
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
-            creation_time DateTime NOT NULL,
-            last_studied_date DateTime NOT NULL
+            creation_time DateTime NOT NULL
         )",
-        []
+        [],
     )?;
 
     conn.execute(
@@ -21,8 +20,19 @@ pub fn init_db(conn: &Connection) -> Result<()> {
             deck_id INTEGER NOT NULL,
             ef FLOAT NOT NULL,
             interval INTEGER NOT NULL,
-            FOREIGN KEY(deck_id) REFERENCES decks(id)
-        )", []
+            queue integer NOT NULL,
+            due integer NOT NULL,
+            data text NOT NULL
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS sessions (
+            id INTEGER PRIMARY KEY,
+            creation_stamp INTEGER NOT NULL
+        )",
+        [],
     )?;
 
     Ok(())

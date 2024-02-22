@@ -1,4 +1,4 @@
-use gpui::{AnyView, Context, Global, Model, WindowContext};
+use gpui::{AnyView, BorrowAppContext, Context, Global, Model, WindowContext};
 
 use crate::components::tab_bar_container::TabBarContainer;
 
@@ -51,9 +51,11 @@ pub trait StackableView {
 
 impl StackableViewState {
     pub fn init(cx: &mut WindowContext) -> Self {
-        StackableViewState {
+        let state = StackableViewState {
             model: cx.new_model(|_| State { view_stack: vec![] }),
-        }
+        };
+        cx.set_global(state.clone());
+        state
     }
 
     pub fn push(&self, view: impl StackableView, cx: &mut WindowContext) {
@@ -62,5 +64,18 @@ impl StackableViewState {
             model.view_stack.push(view_state);
             cx.notify();
         });
+    }
+
+    pub fn pop(&self, cx: &mut WindowContext) {
+        self.model.update(cx, |model, cx| {
+            if model.view_stack.len() > 1 {
+                model.view_stack.pop();
+                cx.notify();
+            }
+        });
+    }
+
+    pub fn update(f: impl FnOnce(&mut Self, &mut WindowContext), cx: &mut WindowContext) {
+        cx.update_global(|state, cx| f(state, cx))
     }
 }

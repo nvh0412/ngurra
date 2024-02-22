@@ -4,8 +4,6 @@ use crate::state::TabView;
 use gpui::{div, prelude::*, AnyView, ViewContext};
 
 use super::{
-    add_card::AddCardView,
-    card_browser::CardBrowserView,
     deck::DeckView,
     tab_bar_container::{TabBarContainer, TabEvent},
 };
@@ -34,9 +32,9 @@ impl TabView for TabPanelBuilder {
             cx.subscribe(
                 &*tab_view.borrow_mut(),
                 move |subscriber: &mut TabPanel, _emitter, event, cx| match event {
-                    TabEvent::Deck => subscriber.content = DeckView::view(cx).into(),
-                    TabEvent::Add => subscriber.content = AddCardView::view(cx).into(),
-                    TabEvent::Browse => subscriber.content = CardBrowserView::view(cx).into(),
+                    TabEvent::Deck => {
+                        subscriber.content = DeckView::view(cx).into();
+                    }
                 },
             )
             .detach();

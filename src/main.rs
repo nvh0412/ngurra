@@ -1,30 +1,41 @@
+mod action;
 mod assets;
 mod components;
 mod db;
+mod errors;
 mod models;
 mod ngurra;
 mod repositories;
 mod state;
+mod storage;
 mod theme;
 mod ui;
 
-use db::init_db;
 use gpui::*;
 use ngurra::Ngurra;
 pub use repositories::deck::Deck;
 pub use repositories::flash_card::FlashCard;
-use rusqlite::Connection;
 
-use std::io::{IsTerminal, Write};
+use std::{
+    io::{IsTerminal, Write},
+    path::PathBuf,
+};
 
-use crate::{assets::Assets, theme::Theme};
+use crate::{
+    assets::Assets,
+    models::{
+        builder::Builder,
+        collection::{Collection, CollectionBuilder},
+    },
+    theme::Theme,
+};
 
 fn main() {
-    if let Ok(conn) = Connection::open("anki-rs.db") {
-        init_db(&conn).unwrap();
-    } else {
-        panic!("Failed to open database");
-    }
+    let collection = CollectionBuilder::new(PathBuf::from("ngurra.db"))
+        .build()
+        .unwrap_or_else(|e| {
+            panic!("Error opening collection: {:?}", e);
+        });
 
     init_logger();
 
@@ -32,6 +43,7 @@ fn main() {
     App::new().with_assets(Assets).run(|cx: &mut AppContext| {
         ngurra::init(cx);
         Theme::init(cx);
+        Collection::init(collection, cx);
 
         cx.open_window(
             WindowOptions {
@@ -41,14 +53,15 @@ fn main() {
                         y: 100.0.into(),
                     },
                     size: Size {
-                        width: 800.0.into(),
+                        width: 840.0.into(),
                         height: 600.0.into(),
                     },
                 }),
                 titlebar: Some(TitlebarOptions {
-                    title: Default::default(),
-                    appears_transparent: Default::default(),
-                    traffic_light_position: Default::default(),
+                    // title: SharedString::from("Ngurra Flash Card").into(),
+                    title: None,
+                    appears_transparent: true,
+                    traffic_light_position: Some(point(px(12.0), px(12.0))),
                 }),
                 center: true,
                 focus: true,

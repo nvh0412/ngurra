@@ -12,12 +12,8 @@ use super::button_common::ButtonCommon;
 pub struct ButtonBase {
     id: ElementId,
     base: Div,
-    width: Option<DefiniteLength>,
-    height: Option<DefiniteLength>,
     pub(super) disabled: bool,
-    pub(super) selected: bool,
     tooltip: Option<Box<dyn Fn(&mut WindowContext) -> AnyView>>,
-    rounding: Option<ButtonBaseRounding>,
     on_click: Option<Box<dyn Fn(&ClickEvent, &mut WindowContext) + 'static>>,
     children: Vec<AnyElement>,
 }
@@ -28,10 +24,6 @@ impl ButtonBase {
             id: id.into(),
             base: div(),
             disabled: false,
-            selected: false,
-            width: None,
-            height: None,
-            rounding: Some(ButtonBaseRounding::All),
             tooltip: None,
             on_click: None,
             children: Vec::new(),
@@ -41,8 +33,6 @@ impl ButtonBase {
 
 pub enum ButtonBaseRounding {
     All,
-    Left,
-    Right,
 }
 
 impl Disableable for ButtonBase {

@@ -1,10 +1,12 @@
-use std::time::SystemTime;
+use std::{collections::HashMap, time::SystemTime};
 
 use chrono::{DateTime, Utc};
-use rusqlite::{Connection, Result};
+use rusqlite::{named_params, Connection, Result};
 use time::OffsetDateTime;
 
 use crate::FlashCard;
+
+use super::flash_card::CardQueue;
 
 /// Represents a deck in the Anki application.
 ///
@@ -31,19 +33,22 @@ use crate::FlashCard;
 /// let mut deck = Deck::new("My Deck");
 /// deck.save(&connection);
 /// ```
+
+#[derive(Clone)]
 pub struct Deck {
-    pub id: Option<i32>,
+    pub id: Option<u32>,
     pub name: String,
     creation_time: SystemTime,
-    last_studied_date: SystemTime,
     pub cards: Vec<FlashCard>,
+    pub stats: Option<DeckStat>,
 }
 
+#[derive(Clone)]
 pub struct DeckStat {
-    pub id: Option<i32>,
-    pub due: i32,
-    pub learning: i32,
-    pub new: i32,
+    pub id: Option<u32>,
+    pub due: u32,
+    pub learning: u32,
+    pub new: u32,
 }
 
 impl Deck {
@@ -61,8 +66,8 @@ impl Deck {
             id: None,
             name: name.to_string(),
             creation_time: SystemTime::now(),
-            last_studied_date: SystemTime::now(),
             cards: Vec::new(),
+            stats: None,
         }
     }
 
@@ -76,24 +81,25 @@ impl Deck {
     ///
     /// A `Result` containing a vector of all decks, or an error if the operation fails.
     pub fn get_all_decks(conn: &Connection) -> Result<Vec<Deck>> {
-        let mut stmt = conn.prepare("SELECT id, name, creation_time, last_studied_date FROM decks")?;
+        let mut stmt = conn.prepare("SELECT id, name, creation_time FROM decks")?;
 
         let decks = stmt.query_map([], |row| {
             let creation_time: String = row.get(2)?;
-            let last_studied_date: String = row.get(3)?;
 
-            let creation_time = DateTime::parse_from_rfc3339(&creation_time).unwrap().naive_utc();
-            let last_studied_date = DateTime::parse_from_rfc3339(&last_studied_date).unwrap().naive_utc();
+            let creation_time = DateTime::parse_from_rfc3339(&creation_time)
+                .unwrap()
+                .naive_utc();
 
-            let creation_time = OffsetDateTime::from_unix_timestamp(creation_time.timestamp()).unwrap().into();
-            let last_studied_date = OffsetDateTime::from_unix_timestamp(last_studied_date.timestamp()).unwrap().into();
+            let creation_time = OffsetDateTime::from_unix_timestamp(creation_time.timestamp())
+                .unwrap()
+                .into();
 
             Ok(Deck {
                 id: Some(row.get(0)?),
                 name: row.get(1)?,
                 creation_time,
-                last_studied_date,
                 cards: Vec::new(),
+                stats: None,
             })
         })?;
 
@@ -115,25 +121,26 @@ impl Deck {
     /// # Returns
     ///
     /// A `Result` containing the loaded deck, or an error if the operation fails.
-    pub fn load(id: i32, conn: &Connection) -> Result<Deck> {
-        let mut stmt = conn.prepare("SELECT id, name, creation_time, last_studied_date FROM decks WHERE id = ?")?;
+    pub fn load(id: u32, conn: &Connection) -> Result<Deck> {
+        let mut stmt = conn.prepare("SELECT id, name, creation_time FROM decks WHERE id = ?")?;
 
         let deck = stmt.query_row(&[&id], |row| {
             let creation_time: String = row.get(2)?;
-            let last_studied_date: String = row.get(3)?;
 
-            let creation_time = DateTime::parse_from_rfc3339(&creation_time).unwrap().naive_utc();
-            let last_studied_date = DateTime::parse_from_rfc3339(&last_studied_date).unwrap().naive_utc();
+            let creation_time = DateTime::parse_from_rfc3339(&creation_time)
+                .unwrap()
+                .naive_utc();
 
-            let creation_time = OffsetDateTime::from_unix_timestamp(creation_time.timestamp()).unwrap().into();
-            let last_studied_date = OffsetDateTime::from_unix_timestamp(last_studied_date.timestamp()).unwrap().into();
+            let creation_time = OffsetDateTime::from_unix_timestamp(creation_time.timestamp())
+                .unwrap()
+                .into();
 
             Ok(Deck {
                 id: Some(row.get(0)?),
                 name: row.get(1)?,
                 creation_time,
-                last_studied_date,
                 cards: Vec::new(),
+                stats: None,
             })
         })?;
 
@@ -153,27 +160,24 @@ impl Deck {
     ///
     /// A `Result` indicating success or failure.
     pub fn save(&mut self, conn: &Connection) -> Result<()> {
-        let last_studied_date = DateTime::<Utc>::from(self.last_studied_date);
-
         match self.id {
             Some(id) => {
                 conn.execute(
-                    "UPDATE decks SET name = ?, last_studied_date = ? WHERE id = ?",
-                    &[&self.name, &last_studied_date.to_rfc3339(), &id.to_string()],
+                    "UPDATE decks SET name = ? WHERE id = ?",
+                    &[&self.name, &id.to_string()],
                 )?;
             }
             None => {
                 conn.execute(
-                    "INSERT INTO decks (name, creation_time, last_studied_date) VALUES (?, ?, ?)",
+                    "INSERT INTO decks (name, creation_time) VALUES (?, ?)",
                     &[
                         &self.name,
                         &DateTime::<Utc>::from(self.creation_time).to_rfc3339(),
-                        &last_studied_date.to_rfc3339(),
                     ],
                 )?;
 
                 let id = conn.last_insert_rowid();
-                self.id = Some(id as i32);
+                self.id = Some(id as u32);
             }
         }
 
@@ -190,7 +194,7 @@ impl Deck {
     /// # Returns
     ///
     /// A `Result` indicating success or failure.
-    pub fn delete(id: i32, conn: &Connection) -> Result<()> {
+    pub fn delete(id: u32, conn: &Connection) -> Result<()> {
         conn.execute("DELETE FROM decks WHERE id = ?", &[&id])?;
 
         Ok(())
@@ -225,6 +229,36 @@ impl Deck {
             new,
         }
     }
+
+    pub fn get_decks_stats(conn: &Connection, day_elapsed: u32) -> Result<HashMap<u32, DeckStat>> {
+        let params = named_params! {
+            ":new_queue" : CardQueue::New as u8,
+            ":learn_queue" : CardQueue::Learning as u8,
+            ":review_queue" : CardQueue::Review as u8,
+            ":day_cutoff" : day_elapsed,
+        };
+
+        conn.prepare(include_str!("query_decks_stats.sql"))?
+            .query_and_then(params, row_to_deck_stat)?
+            .collect()
+    }
+}
+
+fn row_to_deck_stat(row: &rusqlite::Row) -> Result<(u32, DeckStat)> {
+    let deck_id = row.get(0)?;
+    let new = row.get(1)?;
+    let learning = row.get(2)?;
+    let due = row.get(3)?;
+
+    Ok((
+        deck_id,
+        DeckStat {
+            id: Some(deck_id),
+            new,
+            learning,
+            due,
+        },
+    ))
 }
 
 #[cfg(test)]
@@ -285,7 +319,10 @@ mod test {
         let loaded_deck = Deck::load(deck.id.unwrap(), &conn);
 
         assert!(loaded_deck.is_err());
-        assert_eq!(loaded_deck.err().unwrap().to_string(), "Query returned no rows");
+        assert_eq!(
+            loaded_deck.err().unwrap().to_string(),
+            "Query returned no rows"
+        );
     }
 
     #[test]
@@ -308,5 +345,33 @@ mod test {
         assert_eq!(stats.new, 1);
         assert_eq!(stats.learning, 1);
         assert_eq!(stats.due, 1);
+    }
+
+    #[test]
+    fn get_decks_stats() {
+        let conn = Connection::open_in_memory().unwrap();
+        init_db(&conn).unwrap();
+
+        let mut deck = Deck::new("Test Deck");
+        deck.save(&conn).unwrap();
+
+        let mut due_card = FlashCard::new(1, "Front", "Back", Some(0.2));
+        due_card.set_queue(CardQueue::Review);
+        due_card.save(&conn).unwrap();
+
+        let mut learning_card = FlashCard::new(1, "Front", "Back", None);
+        learning_card.set_queue(CardQueue::Learning);
+        learning_card.save(&conn).unwrap();
+
+        let mut new_card = FlashCard::new(1, "Front", "Back", None);
+        new_card.save(&conn).unwrap();
+
+        let stats = Deck::get_decks_stats(&conn, 1).unwrap();
+
+        assert_eq!(stats.len(), 1);
+        let deck_stat = stats.get(&deck.id.unwrap()).unwrap();
+        assert_eq!(deck_stat.due, 1);
+        assert_eq!(deck_stat.new, 1);
+        assert_eq!(deck_stat.learning, 1);
     }
 }

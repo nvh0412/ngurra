@@ -1,14 +1,17 @@
 use core::fmt;
 
-use gpui::{div, green, svg, IntoElement, ParentElement, RenderOnce, SharedString, Styled};
+use gpui::{div, svg, IntoElement, ParentElement, RenderOnce, SharedString, Styled};
 
-use crate::theme::Theme;
+use crate::{
+    theme::Theme,
+    ui::{clickable::Clickable, selectable::Selectable},
+};
 
-#[derive(Debug, IntoElement)]
+#[derive(Debug, IntoElement, Clone)]
 pub enum Icon {
     BookText,
-    FilePlus,
-    FileSearch,
+    Settings,
+    MoveLeft,
 }
 
 fn to_kebap(s: &str) -> String {
@@ -29,18 +32,29 @@ impl Icon {
     pub fn path(&self) -> SharedString {
         let binding = self.to_string();
         let name = to_kebap(binding.as_str());
-        print!("icons/{}.svg", name);
         SharedString::from(format!("icons/{}.svg", name))
-    }
-
-    pub fn get(icon: Icon) -> Self {
-        icon
     }
 }
 
 impl fmt::Display for Icon {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt::Debug::fmt(self, f)
+    }
+}
+
+impl Clickable for Icon {
+    fn on_click(
+        self,
+        handler: impl Fn(&gpui::ClickEvent, &mut gpui::WindowContext) + 'static,
+    ) -> Self {
+        self.on_click(handler)
+    }
+}
+
+impl Selectable for Icon {
+    fn selected(mut self, selected: bool) -> Self {
+        // self.selected(selected)
+        self
     }
 }
 

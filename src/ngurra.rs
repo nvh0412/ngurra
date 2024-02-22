@@ -1,11 +1,21 @@
+use catppuccin::Flavour;
 use gpui::*;
 
 use crate::{components::tab_panel::TabPanelBuilder, state::TabViewState, theme::Theme};
 
 actions!(ngurra, [Hide]);
+actions!(zed, [OpenSettings, Quit]);
 
 pub struct Ngurra {
     state: TabViewState,
+}
+
+fn quit(_: &Quit, cx: &mut AppContext) {
+    cx.spawn(|cx| async move {
+        cx.update(|cx| cx.quit())?;
+        anyhow::Ok(())
+    })
+    .detach_and_log_err(cx);
 }
 
 impl Ngurra {
@@ -25,11 +35,31 @@ impl Render for Ngurra {
 
         div()
             .flex()
+            .flex_col()
             .size_full()
             .bg(theme.base)
             .font(theme.font_mono.clone())
-            .child(current_view.tabbar.clone())
-            .child(current_view.view.clone())
+            .child(div().h(Pixels(42.0)).border_b_1().border_color(theme.crust))
+            .child(
+                div()
+                    .flex()
+                    .size_full()
+                    .child(current_view.tabbar.clone())
+                    .child(
+                        div()
+                            .size_full()
+                            .flex()
+                            .flex_row()
+                            .items_center()
+                            .justify_center()
+                            .child(
+                                div()
+                                    .w(Pixels(800.0))
+                                    .h_full()
+                                    .child(current_view.view.clone()),
+                            ),
+                    ),
+            )
             .child(
                 div()
                     .absolute()
@@ -44,26 +74,28 @@ impl Render for Ngurra {
                     .py_2()
                     .text_color(theme.text)
                     .flex()
-                    .text_xs(), // .child(
-                                //     div()
-                                //         .mr_2()
-                                //         .on_mouse_down(MouseButton::Left, |_ev, cx| {
-                                //             Theme::change(Flavour::Latte, cx)
-                                //         })
-                                //         .child("Light"),
-                                // )
-                                // .child(
-                                //     div()
-                                //         .mr_2()
-                                //         .on_mouse_down(MouseButton::Left, |_ev, cx| {
-                                //             Theme::change(Flavour::Mocha, cx)
-                                //         })
-                                //         .child("Dark"),
-                                // ),
+                    .text_xs()
+                    .child(
+                        div()
+                            .mr_2()
+                            .on_mouse_down(MouseButton::Left, |_ev, cx| {
+                                Theme::change(Flavour::Latte, cx)
+                            })
+                            .child("Light"),
+                    )
+                    .child(
+                        div()
+                            .mr_2()
+                            .on_mouse_down(MouseButton::Left, |_ev, cx| {
+                                Theme::change(Flavour::Mocha, cx)
+                            })
+                            .child("Dark"),
+                    ),
             )
     }
 }
 
 pub fn init(cx: &mut AppContext) {
-    cx.on_action(|_: &Hide, cx| cx.hide())
+    cx.on_action(|_: &Hide, cx| cx.hide());
+    cx.on_action(quit)
 }
