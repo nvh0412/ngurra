@@ -9,6 +9,7 @@ pub enum Icon {
     BookText,
     FilePlus,
     FileSearch,
+    MoveLeft,
 }
 
 fn to_kebap(s: &str) -> String {
@@ -29,7 +30,6 @@ impl Icon {
     pub fn path(&self) -> SharedString {
         let binding = self.to_string();
         let name = to_kebap(binding.as_str());
-        print!("icons/{}.svg", name);
         SharedString::from(format!("icons/{}.svg", name))
     }
 

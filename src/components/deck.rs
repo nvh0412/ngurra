@@ -1,5 +1,6 @@
 use gpui::{div, prelude::*, MouseButton, Render, View, WindowContext};
 
+pub mod deck_detail;
 pub mod deck_list;
 
 use crate::state::{StackableViewState, ViewState};
@@ -32,16 +33,14 @@ impl Render for DeckView {
             back = div()
                 .ml_2()
                 .on_mouse_down(MouseButton::Left, move |_, cx| {
-                    // StateModel::update(|this, cx| this.pop(cx), cx);
+                    StackableViewState::update(|state, cx| state.pop(cx), cx);
                 })
-                .child(Icon::FileSearch);
+                .child(Icon::MoveLeft);
         }
 
         div()
             .size_full()
             .flex()
-            .justify_center()
-            .items_center()
             .child(back)
             .child(current_view.view.clone())
     }

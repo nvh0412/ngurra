@@ -29,7 +29,22 @@ impl Render for Ngurra {
             .bg(theme.base)
             .font(theme.font_mono.clone())
             .child(current_view.tabbar.clone())
-            .child(current_view.view.clone())
+            .child(
+                div()
+                    .size_full()
+                    .flex()
+                    .flex_row()
+                    .items_center()
+                    .justify_center()
+                    .child(
+                        div()
+                            .max_w(Pixels(800.0))
+                            .h_full()
+                            .min_w(Pixels(800.0))
+                            .border_color(red())
+                            .child(div().child(current_view.view.clone())),
+                    ),
+            )
             .child(
                 div()
                     .absolute()

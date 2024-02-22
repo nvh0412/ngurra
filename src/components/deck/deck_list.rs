@@ -4,7 +4,14 @@ use gpui::{
 };
 use rusqlite::Connection;
 
-use crate::{models::deck::get_decks, state::StackableView, theme::Theme, Deck};
+use crate::{
+    models::deck::get_decks,
+    state::{StackableView, StackableViewState},
+    theme::Theme,
+    Deck,
+};
+
+use super::deck_detail::DeckDetailBuilder;
 
 pub struct DeckListView;
 
@@ -31,52 +38,54 @@ impl Render for DeckListView {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::prelude::IntoElement {
         let theme = cx.global::<Theme>();
 
-        div()
-            .mt_2()
-            .border_1()
-            .border_color(theme.crust)
-            .rounded_xl()
-            .border_r_1()
-            .text_color(theme.text)
-            .p_3()
-            .child(
-                div()
-                    .flex()
-                    .flex_row()
-                    .text_sm()
-                    .child(div().px_2().min_w_80().child(format!("Deck")))
-                    .child(
-                        div()
-                            .min_w_20()
-                            .flex()
-                            .justify_center()
-                            .child(format!("New")),
-                    )
-                    .child(
-                        div()
-                            .min_w_20()
-                            .flex()
-                            .justify_center()
-                            .child(format!("Learn")),
-                    )
-                    .child(
-                        div()
-                            .min_w_20()
-                            .flex()
-                            .justify_center()
-                            .child(format!("Due")),
-                    )
-                    .pb_2()
-                    .border_b_1()
-                    .border_color(theme.crust)
-                    .mb_2(),
-            )
-            .children(
-                self.get_all_decks()
-                    .into_iter()
-                    .map(|deck| HocListItem::init(cx.new_view(|_| ListItem::new(deck)).into()))
-                    .collect::<Vec<_>>(),
-            )
+        div().size_full().flex().justify_center().child(
+            div()
+                .mt_20()
+                .border_1()
+                .border_color(theme.crust)
+                .rounded_xl()
+                .border_r_1()
+                .text_color(theme.text)
+                .p_3()
+                .child(
+                    div()
+                        .flex()
+                        .flex_row()
+                        .text_sm()
+                        .child(div().px_2().min_w_80().child(format!("Deck")))
+                        .child(
+                            div()
+                                .min_w_20()
+                                .flex()
+                                .justify_center()
+                                .child(format!("New")),
+                        )
+                        .child(
+                            div()
+                                .min_w_20()
+                                .flex()
+                                .justify_center()
+                                .child(format!("Learn")),
+                        )
+                        .child(
+                            div()
+                                .min_w_20()
+                                .flex()
+                                .justify_center()
+                                .child(format!("Due")),
+                        )
+                        .pb_2()
+                        .border_b_1()
+                        .border_color(theme.crust)
+                        .mb_2(),
+                )
+                .children(
+                    self.get_all_decks()
+                        .into_iter()
+                        .map(|deck| HocListItem::init(cx.new_view(|_| ListItem::new(deck)).into()))
+                        .collect::<Vec<_>>(),
+                ),
+        )
     }
 }
 
@@ -107,6 +116,9 @@ impl RenderOnce for HocListItem {
             .p_2()
             .border_1()
             .rounded_xl()
+            .on_mouse_down(gpui::MouseButton::Left, |e, cx| {
+                StackableViewState::update(|state, cx| state.push(DeckDetailBuilder {}, cx), cx);
+            })
             .child(self.inner)
     }
 }
@@ -129,6 +141,8 @@ impl Render for ListItem {
         div()
             .flex()
             .w_full()
+            .justify_center()
+            .items_center()
             .child(div().min_w_80().text_sm().child(self.deck.name.clone()))
             .child(
                 div()
