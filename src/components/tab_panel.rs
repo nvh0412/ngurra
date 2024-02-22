@@ -1,12 +1,12 @@
 use std::rc::Rc;
 
-use crate::state::StateView;
+use crate::state::TabView;
 use gpui::{div, prelude::*, AnyView, ViewContext};
 
 use super::{
     add_card::AddCardView,
     card_browser::CardBrowserView,
-    deck_list::DeckListView,
+    deck::DeckView,
     tab_bar_container::{TabBarContainer, TabEvent},
 };
 
@@ -22,10 +22,10 @@ impl Render for TabPanel {
     }
 }
 
-impl StateView for TabPanelBuilder {
+impl TabView for TabPanelBuilder {
     fn build(&self, tabbar: &TabBarContainer, cx: &mut gpui::WindowContext) -> gpui::AnyView {
         let panel = TabPanel {
-            content: DeckListView::view(cx).into(),
+            content: DeckView::view(cx).into(),
         };
 
         let tab_view = Rc::clone(&tabbar.view);
@@ -34,7 +34,7 @@ impl StateView for TabPanelBuilder {
             cx.subscribe(
                 &*tab_view.borrow_mut(),
                 move |subscriber: &mut TabPanel, _emitter, event, cx| match event {
-                    TabEvent::Deck => subscriber.content = DeckListView::view(cx).into(),
+                    TabEvent::Deck => subscriber.content = DeckView::view(cx).into(),
                     TabEvent::Add => subscriber.content = AddCardView::view(cx).into(),
                     TabEvent::Browse => subscriber.content = CardBrowserView::view(cx).into(),
                 },

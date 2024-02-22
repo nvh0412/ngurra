@@ -1,23 +1,18 @@
-use catppuccin::Flavour;
 use gpui::*;
 
-use crate::{
-    state::{AppState, ViewState},
-    theme::Theme,
-};
+use crate::{components::tab_panel::TabPanelBuilder, state::TabViewState, theme::Theme};
 
 actions!(ngurra, [Hide]);
 
 pub struct Ngurra {
-    state: AppState,
+    state: TabViewState,
 }
 
 impl Ngurra {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
         cx.new_view(|cx| {
-            let app_state = AppState::init(cx);
-            cx.set_global(app_state.clone());
-            Self { state: app_state }
+            let view_state = TabViewState::init(TabPanelBuilder {}, cx);
+            Self { state: view_state }
         })
     }
 }
@@ -26,8 +21,7 @@ impl Render for Ngurra {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let theme = cx.global::<Theme>();
 
-        let view_stack: &Vec<ViewState> = self.state.model.read(cx).view_stack.as_ref();
-        let current_view = view_stack.last().unwrap();
+        let current_view = &self.state;
 
         div()
             .flex()
