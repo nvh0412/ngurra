@@ -1,3 +1,4 @@
+use catppuccin::Flavour;
 use gpui::*;
 
 use crate::{components::tab_panel::TabPanelBuilder, state::TabViewState, theme::Theme};
@@ -41,7 +42,6 @@ impl Render for Ngurra {
                             .max_w(Pixels(800.0))
                             .h_full()
                             .min_w(Pixels(800.0))
-                            .border_color(red())
                             .child(div().child(current_view.view.clone())),
                     ),
             )
@@ -59,22 +59,23 @@ impl Render for Ngurra {
                     .py_2()
                     .text_color(theme.text)
                     .flex()
-                    .text_xs(), // .child(
-                                //     div()
-                                //         .mr_2()
-                                //         .on_mouse_down(MouseButton::Left, |_ev, cx| {
-                                //             Theme::change(Flavour::Latte, cx)
-                                //         })
-                                //         .child("Light"),
-                                // )
-                                // .child(
-                                //     div()
-                                //         .mr_2()
-                                //         .on_mouse_down(MouseButton::Left, |_ev, cx| {
-                                //             Theme::change(Flavour::Mocha, cx)
-                                //         })
-                                //         .child("Dark"),
-                                // ),
+                    .text_xs()
+                    .child(
+                        div()
+                            .mr_2()
+                            .on_mouse_down(MouseButton::Left, |_ev, cx| {
+                                Theme::change(Flavour::Latte, cx)
+                            })
+                            .child("Light"),
+                    )
+                    .child(
+                        div()
+                            .mr_2()
+                            .on_mouse_down(MouseButton::Left, |_ev, cx| {
+                                Theme::change(Flavour::Mocha, cx)
+                            })
+                            .child("Dark"),
+                    ),
             )
     }
 }

@@ -31,6 +31,7 @@ use crate::FlashCard;
 /// let mut deck = Deck::new("My Deck");
 /// deck.save(&connection);
 /// ```
+
 pub struct Deck {
     pub id: Option<i32>,
     pub name: String,
@@ -76,17 +77,27 @@ impl Deck {
     ///
     /// A `Result` containing a vector of all decks, or an error if the operation fails.
     pub fn get_all_decks(conn: &Connection) -> Result<Vec<Deck>> {
-        let mut stmt = conn.prepare("SELECT id, name, creation_time, last_studied_date FROM decks")?;
+        let mut stmt =
+            conn.prepare("SELECT id, name, creation_time, last_studied_date FROM decks")?;
 
         let decks = stmt.query_map([], |row| {
             let creation_time: String = row.get(2)?;
             let last_studied_date: String = row.get(3)?;
 
-            let creation_time = DateTime::parse_from_rfc3339(&creation_time).unwrap().naive_utc();
-            let last_studied_date = DateTime::parse_from_rfc3339(&last_studied_date).unwrap().naive_utc();
+            let creation_time = DateTime::parse_from_rfc3339(&creation_time)
+                .unwrap()
+                .naive_utc();
+            let last_studied_date = DateTime::parse_from_rfc3339(&last_studied_date)
+                .unwrap()
+                .naive_utc();
 
-            let creation_time = OffsetDateTime::from_unix_timestamp(creation_time.timestamp()).unwrap().into();
-            let last_studied_date = OffsetDateTime::from_unix_timestamp(last_studied_date.timestamp()).unwrap().into();
+            let creation_time = OffsetDateTime::from_unix_timestamp(creation_time.timestamp())
+                .unwrap()
+                .into();
+            let last_studied_date =
+                OffsetDateTime::from_unix_timestamp(last_studied_date.timestamp())
+                    .unwrap()
+                    .into();
 
             Ok(Deck {
                 id: Some(row.get(0)?),
@@ -116,17 +127,27 @@ impl Deck {
     ///
     /// A `Result` containing the loaded deck, or an error if the operation fails.
     pub fn load(id: i32, conn: &Connection) -> Result<Deck> {
-        let mut stmt = conn.prepare("SELECT id, name, creation_time, last_studied_date FROM decks WHERE id = ?")?;
+        let mut stmt = conn
+            .prepare("SELECT id, name, creation_time, last_studied_date FROM decks WHERE id = ?")?;
 
         let deck = stmt.query_row(&[&id], |row| {
             let creation_time: String = row.get(2)?;
             let last_studied_date: String = row.get(3)?;
 
-            let creation_time = DateTime::parse_from_rfc3339(&creation_time).unwrap().naive_utc();
-            let last_studied_date = DateTime::parse_from_rfc3339(&last_studied_date).unwrap().naive_utc();
+            let creation_time = DateTime::parse_from_rfc3339(&creation_time)
+                .unwrap()
+                .naive_utc();
+            let last_studied_date = DateTime::parse_from_rfc3339(&last_studied_date)
+                .unwrap()
+                .naive_utc();
 
-            let creation_time = OffsetDateTime::from_unix_timestamp(creation_time.timestamp()).unwrap().into();
-            let last_studied_date = OffsetDateTime::from_unix_timestamp(last_studied_date.timestamp()).unwrap().into();
+            let creation_time = OffsetDateTime::from_unix_timestamp(creation_time.timestamp())
+                .unwrap()
+                .into();
+            let last_studied_date =
+                OffsetDateTime::from_unix_timestamp(last_studied_date.timestamp())
+                    .unwrap()
+                    .into();
 
             Ok(Deck {
                 id: Some(row.get(0)?),
@@ -285,7 +306,10 @@ mod test {
         let loaded_deck = Deck::load(deck.id.unwrap(), &conn);
 
         assert!(loaded_deck.is_err());
-        assert_eq!(loaded_deck.err().unwrap().to_string(), "Query returned no rows");
+        assert_eq!(
+            loaded_deck.err().unwrap().to_string(),
+            "Query returned no rows"
+        );
     }
 
     #[test]

@@ -32,6 +32,10 @@ impl Render for DeckView {
         if view_stack.len() > 1 {
             back = div()
                 .ml_2()
+                .absolute()
+                .top_0()
+                .left_0()
+                .p_4()
                 .on_mouse_down(MouseButton::Left, move |_, cx| {
                     StackableViewState::update(|state, cx| state.pop(cx), cx);
                 })

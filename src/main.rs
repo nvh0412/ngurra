@@ -41,7 +41,7 @@ fn main() {
                         y: 100.0.into(),
                     },
                     size: Size {
-                        width: 800.0.into(),
+                        width: 820.0.into(),
                         height: 600.0.into(),
                     },
                 }),

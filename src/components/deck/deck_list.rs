@@ -44,7 +44,6 @@ impl Render for DeckListView {
                 .border_1()
                 .border_color(theme.crust)
                 .rounded_xl()
-                .border_r_1()
                 .text_color(theme.text)
                 .p_3()
                 .child(
@@ -53,27 +52,9 @@ impl Render for DeckListView {
                         .flex_row()
                         .text_sm()
                         .child(div().px_2().min_w_80().child(format!("Deck")))
-                        .child(
-                            div()
-                                .min_w_20()
-                                .flex()
-                                .justify_center()
-                                .child(format!("New")),
-                        )
-                        .child(
-                            div()
-                                .min_w_20()
-                                .flex()
-                                .justify_center()
-                                .child(format!("Learn")),
-                        )
-                        .child(
-                            div()
-                                .min_w_20()
-                                .flex()
-                                .justify_center()
-                                .child(format!("Due")),
-                        )
+                        .child(div().min_w_20().flex().justify_center().child("New"))
+                        .child(div().min_w_20().flex().justify_center().child("Learn"))
+                        .child(div().min_w_20().flex().justify_center().child("Due"))
                         .pb_2()
                         .border_b_1()
                         .border_color(theme.crust)
@@ -82,7 +63,10 @@ impl Render for DeckListView {
                 .children(
                     self.get_all_decks()
                         .into_iter()
-                        .map(|deck| HocListItem::init(cx.new_view(|_| ListItem::new(deck)).into()))
+                        .map(|deck| {
+                            let deck_id = deck.id.unwrap();
+                            HocListItem::init(cx.new_view(|_| ListItem::new(deck)).into(), deck_id)
+                        })
                         .collect::<Vec<_>>(),
                 ),
         )
@@ -92,15 +76,12 @@ impl Render for DeckListView {
 #[derive(IntoElement)]
 pub struct HocListItem {
     inner: AnyView,
-    selected: bool,
+    deck_id: i32,
 }
 
 impl HocListItem {
-    pub fn init(inner: AnyView) -> Self {
-        Self {
-            inner,
-            selected: false,
-        }
+    pub fn init(inner: AnyView, deck_id: i32) -> Self {
+        Self { inner, deck_id }
     }
 }
 
@@ -116,8 +97,18 @@ impl RenderOnce for HocListItem {
             .p_2()
             .border_1()
             .rounded_xl()
-            .on_mouse_down(gpui::MouseButton::Left, |e, cx| {
-                StackableViewState::update(|state, cx| state.push(DeckDetailBuilder {}, cx), cx);
+            .on_mouse_down(gpui::MouseButton::Left, move |e, cx| {
+                StackableViewState::update(
+                    |state, cx| {
+                        state.push(
+                            DeckDetailBuilder {
+                                deck_id: self.deck_id,
+                            },
+                            cx,
+                        )
+                    },
+                    cx,
+                );
             })
             .child(self.inner)
     }

@@ -1,33 +1,112 @@
 use gpui::{
-    div, AnyView, IntoElement, ParentElement, Render, Styled, ViewContext, VisualContext,
-    WindowContext,
+    div, green, AnyView, Font, FontWeight, IntoElement, ParentElement, Pixels, Render, Styled,
+    ViewContext, VisualContext, WindowContext,
 };
+use rusqlite::Connection;
 
-use crate::state::StackableView;
+use crate::{state::StackableView, theme::Theme, ui::button::button::Button, Deck, FlashCard};
 
-pub struct DeckDetail;
-
-impl DeckDetail {
-    pub fn view(cx: &mut WindowContext) -> AnyView {
-        cx.new_view(|vc| Self).into()
-    }
+pub struct DeckDetail {
+    pub deck_id: i32,
 }
 
-impl StackableView for DeckDetail {
-    fn build(&self, cx: &mut WindowContext) -> AnyView {
-        DeckDetail::view(cx).into()
+impl DeckDetail {
+    pub fn view(deck_id: i32, cx: &mut WindowContext) -> AnyView {
+        cx.new_view(|vc| Self { deck_id }).into()
+    }
+
+    fn get_deck(&self) -> Deck {
+        let conn = Connection::open("anki-rs.db").unwrap();
+
+        let mut deck = Deck::load(self.deck_id, &conn).unwrap();
+        deck.cards = FlashCard::get_all_cards_in_deck(deck.id.unwrap(), &conn).unwrap();
+        deck
     }
 }
 
 impl Render for DeckDetail {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        div().size_full().child("1231232")
+        let theme = cx.global::<Theme>();
+        let deck = self.get_deck();
+
+        let stats = deck.get_deck_stats();
+
+        div()
+            .flex()
+            .w_full()
+            .flex_col()
+            .pt_20()
+            .text_color(theme.text)
+            .child(
+                div()
+                    .flex()
+                    .justify_center()
+                    .text_xl()
+                    .font_weight(FontWeight::EXTRA_BOLD)
+                    .child(deck.name),
+            )
+            .child(
+                div().size_full().flex().justify_center().child(
+                    div()
+                        .mt_10()
+                        .w(Pixels(300.0))
+                        .justify_center()
+                        .child(
+                            div()
+                                .flex()
+                                .flex_col()
+                                .border_1()
+                                .border_color(theme.crust)
+                                .p_4()
+                                .rounded_xl()
+                                .justify_center()
+                                .text_sm()
+                                .child(
+                                    div().flex().justify_between().child("New").child(
+                                        div()
+                                            .text_xl()
+                                            .font_weight(FontWeight::BOLD)
+                                            .text_color(theme.blue)
+                                            .child(format!("{}", stats.new)),
+                                    ),
+                                )
+                                .child(
+                                    div().flex().justify_between().child("Learning").child(
+                                        div()
+                                            .text_xl()
+                                            .text_color(theme.red)
+                                            .font_weight(FontWeight::BOLD)
+                                            .child(format!("{}", stats.learning)),
+                                    ),
+                                )
+                                .child(
+                                    div().flex().justify_between().child("To review").child(
+                                        div()
+                                            .text_xl()
+                                            .text_color(theme.green)
+                                            .font_weight(FontWeight::BOLD)
+                                            .child(format!("{}", stats.due)),
+                                    ),
+                                ),
+                        )
+                        .child(
+                            div()
+                                .mt_5()
+                                .flex()
+                                .justify_center()
+                                .child(Button::new("study-btn", "Study Now")),
+                        ),
+                ),
+            )
     }
 }
 
-pub struct DeckDetailBuilder;
+pub struct DeckDetailBuilder {
+    pub deck_id: i32,
+}
+
 impl StackableView for DeckDetailBuilder {
     fn build(&self, cx: &mut WindowContext) -> AnyView {
-        DeckDetail::view(cx).into()
+        DeckDetail::view(self.deck_id, cx).into()
     }
 }
