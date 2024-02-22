@@ -2,6 +2,8 @@
 
 Anki-rs is a Rust project that aims to clone the popular flashcard application Anki. It is a hobby project created to practice Rust programming language and explore the development of flashcard applications.
 
+![Screenshot 2024-02-22 at 10 48 48 pm](https://github.com/nvh0412/anki-rs/assets/1973623/d74a90cd-d8e4-42ce-833d-ed51c373d42e)
+
 ## Features
 
 - Deck management: Create, edit, and delete flashcard decks.
