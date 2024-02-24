@@ -7,13 +7,14 @@ use chrono::{DateTime, Utc};
 use rusqlite::{Connection, Result};
 use time::OffsetDateTime;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Status {
     New,
     Learning,
     Due,
 }
 
+#[derive(Clone)]
 pub struct FlashCard {
     id: Option<i32>,
     deck_id: i32,
@@ -23,7 +24,6 @@ pub struct FlashCard {
     last_studied_time: Option<SystemTime>,
     ef: f32,
     interval: f64,
-    status: Status,
     performance_metrics: HashMap<String, i32>,
 }
 
@@ -39,7 +39,6 @@ impl FlashCard {
             performance_metrics: HashMap::new(),
             ef: ef.unwrap_or(2.5),
             interval: 1.0,
-            status: Status::New,
         }
     }
 
@@ -102,7 +101,6 @@ impl FlashCard {
                 performance_metrics: HashMap::new(),
                 ef: row.get(5)?,
                 interval: row.get(6)?,
-                status: Status::New,
             })
         })?;
 
@@ -162,7 +160,6 @@ impl FlashCard {
                 performance_metrics: HashMap::new(),
                 ef: row.get(6)?,
                 interval: row.get(7)?,
-                status: Status::New,
             })
         })?;
 

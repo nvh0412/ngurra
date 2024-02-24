@@ -1,10 +1,17 @@
 use gpui::{
-    div, green, AnyView, Font, FontWeight, IntoElement, ParentElement, Pixels, Render, Styled,
-    ViewContext, VisualContext, WindowContext,
+    div, AnyView, FontWeight, IntoElement, ParentElement, Pixels, Render, Styled, ViewContext,
+    VisualContext, WindowContext,
 };
 use rusqlite::Connection;
 
-use crate::{state::StackableView, theme::Theme, ui::button::button::Button, Deck, FlashCard};
+use crate::{
+    state::{StackableView, StackableViewState},
+    theme::Theme,
+    ui::{button::button::Button, clickable::Clickable},
+    Deck, FlashCard,
+};
+
+use super::flash_card::FlashCardBuilder;
 
 pub struct DeckDetail {
     pub deck_id: i32,
@@ -12,7 +19,7 @@ pub struct DeckDetail {
 
 impl DeckDetail {
     pub fn view(deck_id: i32, cx: &mut WindowContext) -> AnyView {
-        cx.new_view(|vc| Self { deck_id }).into()
+        cx.new_view(|_vc| Self { deck_id }).into()
     }
 
     fn get_deck(&self) -> Deck {
@@ -89,13 +96,16 @@ impl Render for DeckDetail {
                                     ),
                                 ),
                         )
-                        .child(
-                            div()
-                                .mt_5()
-                                .flex()
-                                .justify_center()
-                                .child(Button::new("study-btn", "Study Now")),
-                        ),
+                        .child(div().mt_5().flex().justify_center().child(
+                            Button::new("study-btn", "Study Now").on_click(move |_e, cx| {
+                                StackableViewState::update(
+                                    |state, cx| {
+                                        state.push(FlashCardBuilder { cards: &deck.cards }, cx)
+                                    },
+                                    cx,
+                                );
+                            }),
+                        )),
                 ),
             )
     }

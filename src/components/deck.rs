@@ -2,6 +2,7 @@ use gpui::{div, prelude::*, MouseButton, Render, View, WindowContext};
 
 pub mod deck_detail;
 pub mod deck_list;
+pub mod flash_card;
 
 use crate::state::{StackableViewState, ViewState};
 
