@@ -39,10 +39,9 @@ impl Render for Ngurra {
                     .justify_center()
                     .child(
                         div()
-                            .max_w(Pixels(800.0))
+                            .w(Pixels(800.0))
                             .h_full()
-                            .min_w(Pixels(800.0))
-                            .child(div().child(current_view.view.clone())),
+                            .child(current_view.view.clone()),
                     ),
             )
             .child(

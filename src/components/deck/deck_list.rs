@@ -1,6 +1,6 @@
 use gpui::{
-    div, AnyView, InteractiveElement, IntoElement, ParentElement, Render, RenderOnce, Styled, View,
-    VisualContext, WindowContext,
+    div, green, yellow, AnyView, InteractiveElement, IntoElement, ParentElement, Render,
+    RenderOnce, Styled, View, VisualContext, WindowContext,
 };
 use rusqlite::Connection;
 
@@ -38,37 +38,41 @@ impl Render for DeckListView {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::prelude::IntoElement {
         let theme = cx.global::<Theme>();
 
-        div().size_full().flex().justify_center().child(
-            div()
-                .mt_20()
-                .border_1()
-                .border_color(theme.crust)
-                .rounded_xl()
-                .text_color(theme.text)
-                .p_3()
-                .child(
-                    div()
-                        .flex()
-                        .flex_row()
-                        .text_sm()
-                        .child(div().px_2().min_w_80().child(format!("Deck")))
-                        .child(div().min_w_20().flex().justify_center().child("New"))
-                        .child(div().min_w_20().flex().justify_center().child("Learn"))
-                        .child(div().min_w_20().flex().justify_center().child("Due"))
-                        .pb_2()
-                        .border_b_1()
-                        .border_color(theme.crust)
-                        .mb_2(),
-                )
-                .children(
-                    self.get_all_decks()
-                        .into_iter()
-                        .map(|deck| {
-                            let deck_id = deck.id.unwrap();
-                            HocListItem::init(cx.new_view(|_| ListItem::new(deck)).into(), deck_id)
-                        })
-                        .collect::<Vec<_>>(),
-                ),
+        div().flex().size_full().justify_center().child(
+            div().mt_20().child(
+                div()
+                    .border_1()
+                    .border_color(theme.crust)
+                    .rounded_xl()
+                    .text_color(theme.text)
+                    .p_3()
+                    .child(
+                        div()
+                            .flex()
+                            .flex_row()
+                            .text_sm()
+                            .child(div().px_2().min_w_80().child(format!("Deck")))
+                            .child(div().min_w_20().flex().justify_center().child("New"))
+                            .child(div().min_w_20().flex().justify_center().child("Learn"))
+                            .child(div().min_w_20().flex().justify_center().child("Due"))
+                            .pb_2()
+                            .border_b_1()
+                            .border_color(theme.crust)
+                            .mb_2(),
+                    )
+                    .children(
+                        self.get_all_decks()
+                            .into_iter()
+                            .map(|deck| {
+                                let deck_id = deck.id.unwrap();
+                                HocListItem::init(
+                                    cx.new_view(|_| ListItem::new(deck)).into(),
+                                    deck_id,
+                                )
+                            })
+                            .collect::<Vec<_>>(),
+                    ),
+            ),
         )
     }
 }
