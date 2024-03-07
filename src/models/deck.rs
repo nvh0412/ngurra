@@ -9,7 +9,7 @@ pub fn get_decks(conn: &Connection) -> Vec<Deck> {
     match decks_res {
         Ok(mut decks) => {
             decks.iter_mut().for_each(|d| {
-                d.cards = FlashCard::get_all_cards_in_deck(d.id.unwrap(), &conn).unwrap();
+                d.cards = FlashCard::get_all_cards_in_deck(d.id.unwrap(), &conn, 10).unwrap();
             });
             decks
         }

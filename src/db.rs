@@ -8,7 +8,7 @@ pub fn init_db(conn: &Connection) -> Result<()> {
             creation_time DateTime NOT NULL,
             last_studied_date DateTime NOT NULL
         )",
-        []
+        [],
     )?;
 
     conn.execute(
@@ -22,7 +22,8 @@ pub fn init_db(conn: &Connection) -> Result<()> {
             ef FLOAT NOT NULL,
             interval INTEGER NOT NULL,
             FOREIGN KEY(deck_id) REFERENCES decks(id)
-        )", []
+        )",
+        [],
     )?;
 
     Ok(())

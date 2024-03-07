@@ -26,7 +26,7 @@ impl DeckDetail {
         let conn = Connection::open("anki-rs.db").unwrap();
 
         let mut deck = Deck::load(self.deck_id, &conn).unwrap();
-        deck.cards = FlashCard::get_all_cards_in_deck(deck.id.unwrap(), &conn).unwrap();
+        deck.cards = FlashCard::get_all_cards_in_deck(deck.id.unwrap(), &conn, 10).unwrap();
         deck
     }
 }

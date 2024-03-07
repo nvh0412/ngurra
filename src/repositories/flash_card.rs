@@ -64,7 +64,11 @@ impl FlashCard {
     /// # Returns
     ///
     /// A `Result` containing a vector of `FlashCard` instances.
-    pub fn get_all_cards_in_deck(deck_id: i32, conn: &Connection) -> Result<Vec<FlashCard>> {
+    pub fn get_all_cards_in_deck(
+        deck_id: i32,
+        conn: &Connection,
+        limit: i16,
+    ) -> Result<Vec<FlashCard>> {
         let mut stmt = conn.prepare("SELECT id, question, answer, creation_time, last_studied_time, ef, interval FROM cards WHERE deck_id = ?")?;
         let card_iter = stmt.query_map(&[&deck_id.to_string()], |row| {
             let creation_time: String = row.get(3)?;
@@ -78,15 +82,23 @@ impl FlashCard {
             let last_studied_time: Result<String> = row.get(4);
 
             let last_studied_time = if let Ok(last_studied_time) = last_studied_time {
-                let last_studied_time = DateTime::parse_from_rfc3339(&last_studied_time)
-                    .unwrap()
-                    .naive_utc();
+                let last_studied_time = DateTime::parse_from_rfc3339(&last_studied_time);
 
-                Some(
-                    OffsetDateTime::from_unix_timestamp(last_studied_time.timestamp())
-                        .unwrap()
-                        .into(),
-                )
+                match last_studied_time {
+                    Ok(last_studied_time) => {
+                        let last_studied_time = last_studied_time.naive_utc();
+                        let last_studied_time =
+                            OffsetDateTime::from_unix_timestamp(last_studied_time.timestamp())
+                                .unwrap()
+                                .into();
+
+                        Some(last_studied_time)
+                    }
+                    Err(e) => {
+                        println!("Error parsing last_studied_time: {}", e);
+                        None
+                    }
+                }
             } else {
                 None
             };
@@ -179,30 +191,38 @@ impl FlashCard {
     ///
     /// A `Result` indicating success or failure.
     pub fn save(&mut self, conn: &Connection) -> Result<()> {
+        let last_studied_time = if let Some(last_studied_time) = self.last_studied_time {
+            DateTime::<Utc>::from(last_studied_time).to_rfc3339()
+        } else {
+            DateTime::<Utc>::from(SystemTime::now()).to_rfc3339()
+        };
+
         match self.id {
             Some(id) => {
                 conn.execute(
-                    "UPDATE cards SET question = ?, answer = ?, deck_id = ?, ef = ?, interval = ? WHERE id = ?",
+                    "UPDATE cards SET question = ?, answer = ?, deck_id = ?, ef = ?, interval = ?, last_studied_time = ? WHERE id = ?",
                     &[
                         &self.question,
                         &self.answer,
-                        &id.to_string(),
                         &self.deck_id.to_string(),
                         &self.ef.to_string(),
-                        &self.interval.to_string()
+                        &self.interval.to_string(),
+                        &last_studied_time.to_string(),
+                        &id.to_string()
                     ]
                 )?;
             }
             None => {
                 conn.execute(
-                    "INSERT INTO cards (question, answer, creation_time, deck_id, ef, interval) VALUES (?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO cards (question, answer, creation_time, deck_id, ef, interval, last_studied_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     &[
                         &self.question,
                         &self.answer,
                         &DateTime::<Utc>::from(self.creation_time).to_rfc3339(),
                         &self.deck_id.to_string(),
                         &self.ef.to_string(),
-                        &self.interval.to_string()
+                        &self.interval.to_string(),
+                        &last_studied_time.to_string()
                     ]
                 )?;
 
@@ -251,6 +271,17 @@ impl FlashCard {
     pub fn is_learning(&self) -> bool {
         self.get_status() == Status::Learning
     }
+
+    pub fn rate(&mut self, rating: u8) {
+        let q = self.ef;
+
+        let ef = q + (0.1 - (5 - rating) as f32 * (0.08 + (5 - rating) as f32 * 0.02));
+        let ef = if ef < 1.3 { 1.3 } else { ef };
+
+        self.ef = ef;
+        self.interval = self.interval * ef as f64;
+        self.last_studied_time = Some(SystemTime::now());
+    }
 }
 
 #[cfg(test)]
@@ -275,7 +306,7 @@ mod test {
         );
         card.save(&conn).unwrap();
 
-        let cards = FlashCard::get_all_cards_in_deck(deck.id.unwrap(), &conn).unwrap();
+        let cards = FlashCard::get_all_cards_in_deck(deck.id.unwrap(), &conn, 10).unwrap();
         assert_eq!(cards.len(), 1);
     }
 
@@ -337,7 +368,7 @@ mod test {
 
         card.delete(&conn).unwrap();
 
-        let cards = FlashCard::get_all_cards_in_deck(deck.id.unwrap(), &conn).unwrap();
+        let cards = FlashCard::get_all_cards_in_deck(deck.id.unwrap(), &conn, 10).unwrap();
         assert_eq!(cards.len(), 0);
     }
 
@@ -368,5 +399,39 @@ mod test {
         card.save(&conn).unwrap();
 
         assert_eq!(card.get_status(), Status::Due);
+    }
+
+    #[test]
+    fn rate() {
+        let conn = Connection::open_in_memory().unwrap();
+        init_db(&conn).unwrap();
+
+        let mut deck = Deck::new("Test Deck");
+        deck.save(&conn).unwrap();
+
+        let mut card = FlashCard::new(
+            deck.id.unwrap(),
+            "What is the capital of France?",
+            "Paris",
+            None,
+        );
+
+        card.last_studied_time = Some(SystemTime::now() - Duration::from_secs(60 * 60 * 24 * 2));
+        card.save(&conn).unwrap();
+
+        let old_interval = card.interval;
+
+        card.rate(5);
+        assert_eq!(card.ef, 2.6);
+        assert_eq!(card.interval, old_interval * card.ef as f64);
+
+        card.rate(4);
+        assert_eq!(card.ef, 2.6);
+
+        card.rate(3);
+        assert_eq!(card.ef, 2.46);
+
+        card.rate(2);
+        assert_eq!(card.ef, 2.14);
     }
 }
