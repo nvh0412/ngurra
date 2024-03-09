@@ -1,9 +1,9 @@
 use std::ops::Range;
 
 use gpui::{
-    div, EventEmitter, FocusHandle, HighlightStyle, InteractiveElement, InteractiveText,
-    IntoElement, KeyDownEvent, ParentElement, Render, RenderOnce, Styled, StyledText, TextStyle,
-    View, ViewContext, VisualContext, WindowContext,
+    div, EventEmitter, FocusHandle, InteractiveElement, InteractiveText, IntoElement, KeyDownEvent,
+    ParentElement, Render, RenderOnce, Styled, StyledText, TextStyle, View, ViewContext,
+    VisualContext, WindowContext,
 };
 
 use crate::theme::Theme;
@@ -70,7 +70,6 @@ impl RenderOnce for TextField {
 pub enum TextEvent {
     Input { text: String },
     Blur,
-    Back,
     KeyDown(KeyDownEvent),
 }
 
@@ -159,9 +158,6 @@ impl Render for TextView {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let theme = cx.global::<Theme>();
         let mut text = self.text.clone();
-        let mut selection_style = HighlightStyle::default();
-
-        let mut color = theme.lavender;
 
         let mut style = TextStyle::default();
         style.color = theme.text;

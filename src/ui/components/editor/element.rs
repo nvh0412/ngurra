@@ -1,14 +1,13 @@
 use gpui::{
-    fill, font, green, point, quad, relative, size, white, Bounds, ContentMask, Corners,
-    DispatchPhase, Edges, Element, ElementContext, ElementInputHandler, Entity, InteractiveBounds,
-    IntoElement, KeyContext, ModifiersChangedEvent, Pixels, Point, Size, Style, TextRun, View,
-    WindowContext,
+    point, quad, relative, size, Bounds, ContentMask, Corners, DispatchPhase, Edges, Element,
+    ElementContext, ElementInputHandler, Entity, InteractiveBounds, IntoElement, KeyContext,
+    ModifiersChangedEvent, Pixels, Size, Style, View, WindowContext,
 };
 
 use crate::theme::Theme;
 
 use super::{
-    cursor::{Cursor, CursorShape},
+    cursor::Cursor,
     editor::{Editor, EditorMode},
 };
 
@@ -38,9 +37,7 @@ impl EditorElement {
 
     fn register_actions(&self, cx: &mut WindowContext) {}
 
-    fn register_key_listeners(&self, cx: &mut ElementContext, text_bounds: Bounds<Pixels>) {
-        let stacking_order = cx.stacking_order().clone();
-
+    fn register_key_listeners(&self, cx: &mut ElementContext, _text_bounds: Bounds<Pixels>) {
         cx.on_key_event({
             let editor = self.editor.clone();
             move |event: &ModifiersChangedEvent, phase, cx| {

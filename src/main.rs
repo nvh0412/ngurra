@@ -1,6 +1,7 @@
 mod assets;
 mod components;
 mod db;
+mod errors;
 mod models;
 mod ngurra;
 mod repositories;
@@ -8,7 +9,6 @@ mod state;
 mod storage;
 mod theme;
 mod ui;
-mod errors;
 
 use db::init_db;
 use gpui::*;
@@ -16,17 +16,28 @@ use ngurra::Ngurra;
 pub use repositories::deck::Deck;
 pub use repositories::flash_card::FlashCard;
 
-use std::{io::{IsTerminal, Write}, path::PathBuf};
+use std::{
+    io::{IsTerminal, Write},
+    path::PathBuf,
+};
 
-use crate::{assets::Assets, models::collection::{Collection, CollectionBuilder}, theme::Theme};
+use crate::{
+    assets::Assets,
+    models::{
+        builder::Builder,
+        collection::{Collection, CollectionBuilder},
+    },
+    theme::Theme,
+};
 
 fn main() {
-    let collection = CollectionBuilder::new(PathBuf::from("anki-rs.db")).build().unwrap_or_else(|e| {
-        panic!("Error opening collection: {:?}", e);
-    });
+    let collection = CollectionBuilder::new(PathBuf::from("anki-rs.db"))
+        .build()
+        .unwrap_or_else(|e| {
+            panic!("Error opening collection: {:?}", e);
+        });
 
     init_db(&collection.storage.conn).unwrap();
-
     init_logger();
 
     log::info!("========== starting Ngurra ==========");

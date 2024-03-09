@@ -3,25 +3,30 @@ use gpui::{
     VisualContext, WindowContext,
 };
 
-
 use crate::{
-    models::collection::{self, Collection}, state::{StackableView, StackableViewState}, theme::Theme, ui::{button::button::Button, clickable::Clickable}, Deck, FlashCard
+    models::collection::{self, Collection},
+    state::{StackableView, StackableViewState},
+    theme::Theme,
+    ui::{button::button::Button, clickable::Clickable},
+    Deck, FlashCard,
 };
 
 use super::flash_card::FlashCardBuilder;
 
 pub struct DeckDetail {
-    pub deck_id: i32,
+    pub deck_id: u32,
 }
 
 impl DeckDetail {
-    pub fn view(deck_id: i32, cx: &mut WindowContext) -> AnyView {
+    pub fn view(deck_id: u32, cx: &mut WindowContext) -> AnyView {
         cx.new_view(|_vc| Self { deck_id }).into()
     }
 
     fn get_deck(&self, collection: &Collection) -> Deck {
         let mut deck = Deck::load(self.deck_id, &collection.storage.conn).unwrap();
-        deck.cards = FlashCard::get_all_cards_in_deck(deck.id.unwrap(), &collection.storage.conn, 10).unwrap();
+        deck.cards =
+            FlashCard::get_all_cards_in_deck(deck.id.unwrap(), &collection.storage.conn, 10)
+                .unwrap();
         deck
     }
 }
@@ -108,7 +113,7 @@ impl Render for DeckDetail {
 }
 
 pub struct DeckDetailBuilder {
-    pub deck_id: i32,
+    pub deck_id: u32,
 }
 
 impl StackableView for DeckDetailBuilder {

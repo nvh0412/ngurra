@@ -1,10 +1,12 @@
-use std::{
-    collections::HashMap,
-    time::{Duration, SystemTime},
-};
+use std::time::{Duration, SystemTime};
 
 use chrono::{DateTime, Utc};
-use rusqlite::{Connection, Result};
+use rusqlite::{
+    params,
+    types::{FromSql, ValueRef},
+    Connection, Result,
+};
+
 use time::OffsetDateTime;
 
 #[derive(PartialEq, Debug, Clone)]
@@ -15,20 +17,43 @@ pub enum Status {
 }
 
 #[derive(Clone)]
+pub enum CardQueue {
+    New = 0,
+    Learning = 1,
+    Review = 2,
+}
+
+impl FromSql for CardQueue {
+    fn column_result(value: rusqlite::types::ValueRef<'_>) -> rusqlite::types::FromSqlResult<Self> {
+        if let ValueRef::Integer(i) = value {
+            match i {
+                0 => Ok(CardQueue::New),
+                1 => Ok(CardQueue::Learning),
+                2 => Ok(CardQueue::Review),
+                _ => Err(rusqlite::types::FromSqlError::InvalidType),
+            }
+        } else {
+            Err(rusqlite::types::FromSqlError::InvalidType)
+        }
+    }
+}
+
+#[derive(Clone)]
 pub struct FlashCard {
     id: Option<i32>,
-    deck_id: i32,
+    deck_id: u32,
     question: String,
     answer: String,
     creation_time: SystemTime,
     last_studied_time: Option<SystemTime>,
     ef: f32,
     interval: f64,
-    performance_metrics: HashMap<String, i32>,
+    due: i32,
+    queue: CardQueue,
 }
 
 impl FlashCard {
-    pub fn new(deck_id: i32, question: &str, answer: &str, ef: Option<f32>) -> FlashCard {
+    pub fn new(deck_id: u32, question: &str, answer: &str, ef: Option<f32>) -> FlashCard {
         FlashCard {
             id: None,
             deck_id,
@@ -36,9 +61,10 @@ impl FlashCard {
             answer: answer.to_string(),
             creation_time: SystemTime::now(),
             last_studied_time: None,
-            performance_metrics: HashMap::new(),
             ef: ef.unwrap_or(2.5),
             interval: 1.0,
+            due: 0,
+            queue: CardQueue::New,
         }
     }
 
@@ -54,6 +80,10 @@ impl FlashCard {
         &self.answer
     }
 
+    pub fn set_queue(&mut self, queue: CardQueue) {
+        self.queue = queue;
+    }
+
     /// Retrieves all cards in the specified deck from the database.
     ///
     /// # Arguments
@@ -65,11 +95,11 @@ impl FlashCard {
     ///
     /// A `Result` containing a vector of `FlashCard` instances.
     pub fn get_all_cards_in_deck(
-        deck_id: i32,
+        deck_id: u32,
         conn: &Connection,
         limit: i16,
     ) -> Result<Vec<FlashCard>> {
-        let mut stmt = conn.prepare("SELECT id, question, answer, creation_time, last_studied_time, ef, interval FROM cards WHERE deck_id = ?")?;
+        let mut stmt = conn.prepare("SELECT id, question, answer, creation_time, last_studied_time, ef, interval, due, queue FROM cards WHERE deck_id = ?")?;
         let card_iter = stmt.query_map(&[&deck_id.to_string()], |row| {
             let creation_time: String = row.get(3)?;
             let creation_time = DateTime::parse_from_rfc3339(&creation_time)
@@ -110,9 +140,10 @@ impl FlashCard {
                 answer: row.get(2)?,
                 creation_time,
                 last_studied_time,
-                performance_metrics: HashMap::new(),
                 ef: row.get(5)?,
                 interval: row.get(6)?,
+                due: row.get(7).ok().unwrap_or_default(),
+                queue: row.get(8)?,
             })
         })?;
 
@@ -135,7 +166,9 @@ impl FlashCard {
     ///
     /// A `Result` containing the loaded card, or an error if the operation fails.
     pub fn load(id: i32, conn: &Connection) -> Result<FlashCard> {
-        let mut stmt = conn.prepare("SELECT id, deck_id, question, answer, creation_time, last_studied_time, ef, interval FROM cards WHERE id = ?")?;
+        let mut stmt = conn.prepare(
+            "SELECT id, deck_id, question, answer, creation_time, last_studied_time, ef, interval, queue, due FROM cards WHERE id = ?"
+        )?;
 
         let deck = stmt.query_row(&[&id], |row| {
             let creation_time: String = row.get(4)?;
@@ -169,9 +202,10 @@ impl FlashCard {
                 answer: row.get(3)?,
                 creation_time,
                 last_studied_time,
-                performance_metrics: HashMap::new(),
                 ef: row.get(6)?,
                 interval: row.get(7)?,
+                due: row.get(8).ok().unwrap_or_default(),
+                queue: row.get(9)?,
             })
         })?;
 
@@ -213,18 +247,21 @@ impl FlashCard {
                 )?;
             }
             None => {
-                conn.execute(
-                    "INSERT INTO cards (question, answer, creation_time, deck_id, ef, interval, last_studied_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    &[
-                        &self.question,
-                        &self.answer,
-                        &DateTime::<Utc>::from(self.creation_time).to_rfc3339(),
-                        &self.deck_id.to_string(),
-                        &self.ef.to_string(),
-                        &self.interval.to_string(),
-                        &last_studied_time.to_string()
-                    ]
+                let mut stmt = conn.prepare_cached(
+                    "INSERT INTO cards (question, answer, creation_time, deck_id, ef, interval, last_studied_time, queue, due) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
                 )?;
+
+                stmt.execute(params![
+                    self.question,
+                    self.answer,
+                    DateTime::<Utc>::from(self.creation_time).to_rfc3339(),
+                    self.deck_id.to_string(),
+                    self.ef.to_string(),
+                    self.interval.to_string(),
+                    last_studied_time.to_string(),
+                    self.queue.clone() as i8,
+                    self.due
+                ])?;
 
                 let id = conn.last_insert_rowid();
                 self.id = Some(id as i32);

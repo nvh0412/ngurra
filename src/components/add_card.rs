@@ -15,12 +15,12 @@ impl AddCardView {
 }
 
 impl Render for AddCardView {
-    fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::prelude::IntoElement {
+    fn render(&mut self, _cx: &mut gpui::ViewContext<Self>) -> impl gpui::prelude::IntoElement {
         div()
             .flex()
             .justify_center()
             .child(self.text_input.clone())
-            .child(Button::new("", "Click me").on_click(|event, cx| {
+            .child(Button::new("", "Click me").on_click(|event, _cx| {
                 log::info!("Button clicked: {:?}", event);
             }))
     }

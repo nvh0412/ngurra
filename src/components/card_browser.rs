@@ -9,11 +9,7 @@ impl CardBrowserView {
 }
 
 impl Render for CardBrowserView {
-    fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::prelude::IntoElement {
-        div()
-            .mt_20()
-            .flex()
-            .justify_center()
-            .child("Browse Card")
+    fn render(&mut self, _cx: &mut gpui::ViewContext<Self>) -> impl gpui::prelude::IntoElement {
+        div().mt_20().flex().justify_center().child("Browse Card")
     }
 }

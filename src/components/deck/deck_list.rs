@@ -1,11 +1,11 @@
 use gpui::{
-    div, green, yellow, AnyView, InteractiveElement, IntoElement, ParentElement, Render,
-    RenderOnce, Styled, View, VisualContext, WindowContext,
+    div, AnyView, InteractiveElement, IntoElement, ParentElement, Render, RenderOnce, Styled, View,
+    VisualContext, WindowContext,
 };
-use rusqlite::Connection;
 
 use crate::{
     models::{collection::Collection, deck::get_decks},
+    repositories::deck::DeckStat,
     state::{StackableView, StackableViewState},
     theme::Theme,
     Deck,
@@ -24,11 +24,26 @@ impl StackableView for DeckListBuilder {
 
 impl DeckListView {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
-        cx.new_view(|vc| Self)
+        cx.new_view(|_vc| Self)
     }
 
-    fn get_all_decks(&self, collection: &Collection) -> Vec<Deck> {
-        get_decks(&collection.storage.conn)
+    fn get_all_decks_and_stats(&self, collection: &Collection) -> Vec<Deck> {
+        let decks = get_decks(&collection.storage.conn);
+        let decks_stats = Deck::get_decks_stats(&collection.storage.conn).unwrap();
+
+        decks
+            .into_iter()
+            .map(|mut deck| {
+                let st = decks_stats.get(&deck.id.unwrap()).unwrap();
+                deck.stats = Some(DeckStat {
+                    id: Some(deck.id.unwrap()),
+                    new: st.new,
+                    learning: st.learning,
+                    due: st.due,
+                });
+                deck
+            })
+            .collect()
     }
 }
 
@@ -60,7 +75,7 @@ impl Render for DeckListView {
                             .mb_2(),
                     )
                     .children(
-                        self.get_all_decks(collection)
+                        self.get_all_decks_and_stats(collection)
                             .into_iter()
                             .map(|deck| {
                                 let deck_id = deck.id.unwrap();
@@ -79,11 +94,11 @@ impl Render for DeckListView {
 #[derive(IntoElement)]
 pub struct HocListItem {
     inner: AnyView,
-    deck_id: i32,
+    deck_id: u32,
 }
 
 impl HocListItem {
-    pub fn init(inner: AnyView, deck_id: i32) -> Self {
+    pub fn init(inner: AnyView, deck_id: u32) -> Self {
         Self { inner, deck_id }
     }
 }
@@ -130,7 +145,8 @@ impl ListItem {
 impl Render for ListItem {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl IntoElement {
         let theme = cx.global::<Theme>();
-        let deck_stat = self.deck.get_deck_stats();
+
+        let stats = self.deck.stats.as_ref().unwrap();
 
         div()
             .flex()
@@ -144,7 +160,7 @@ impl Render for ListItem {
                     .flex()
                     .justify_center()
                     .text_color(theme.blue)
-                    .child(format!("{}", deck_stat.new)),
+                    .child(format!("{}", stats.new)),
             )
             .child(
                 div()
@@ -152,7 +168,7 @@ impl Render for ListItem {
                     .flex()
                     .justify_center()
                     .text_color(theme.red)
-                    .child(format!("{}", deck_stat.learning)),
+                    .child(format!("{}", stats.learning)),
             )
             .child(
                 div()
@@ -160,7 +176,7 @@ impl Render for ListItem {
                     .flex()
                     .justify_center()
                     .text_color(theme.green)
-                    .child(format!("{}", deck_stat.due)),
+                    .child(format!("{}", stats.due)),
             )
     }
 }

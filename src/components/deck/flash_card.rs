@@ -1,8 +1,11 @@
 use gpui::*;
-use rusqlite::Connection;
 
 use crate::{
-    models::collection::{self, Collection}, repositories::{self, flash_card}, state::StackableView, theme::Theme, ui::{button::button::Button, clickable::Clickable}
+    models::collection::Collection,
+    repositories::flash_card,
+    state::StackableView,
+    theme::Theme,
+    ui::{button::button::Button, clickable::Clickable},
 };
 
 pub struct FlashCard {

@@ -1,6 +1,6 @@
 use core::fmt;
 
-use gpui::{div, green, svg, IntoElement, ParentElement, RenderOnce, SharedString, Styled};
+use gpui::{div, svg, IntoElement, ParentElement, RenderOnce, SharedString, Styled};
 
 use crate::theme::Theme;
 
