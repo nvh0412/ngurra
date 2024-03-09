@@ -5,7 +5,7 @@ use gpui::{
 use rusqlite::Connection;
 
 use crate::{
-    models::deck::get_decks,
+    models::{collection::Collection, deck::get_decks},
     state::{StackableView, StackableViewState},
     theme::Theme,
     Deck,
@@ -27,16 +27,15 @@ impl DeckListView {
         cx.new_view(|vc| Self)
     }
 
-    fn get_all_decks(&self) -> Vec<Deck> {
-        let conn = Connection::open("anki-rs.db").unwrap();
-
-        get_decks(&conn)
+    fn get_all_decks(&self, collection: &Collection) -> Vec<Deck> {
+        get_decks(&collection.storage.conn)
     }
 }
 
 impl Render for DeckListView {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl gpui::prelude::IntoElement {
         let theme = cx.global::<Theme>();
+        let collection = cx.global::<crate::Collection>();
 
         div().flex().size_full().justify_center().child(
             div().mt_20().child(
@@ -61,7 +60,7 @@ impl Render for DeckListView {
                             .mb_2(),
                     )
                     .children(
-                        self.get_all_decks()
+                        self.get_all_decks(collection)
                             .into_iter()
                             .map(|deck| {
                                 let deck_id = deck.id.unwrap();

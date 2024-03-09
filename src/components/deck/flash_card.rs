@@ -2,10 +2,7 @@ use gpui::*;
 use rusqlite::Connection;
 
 use crate::{
-    repositories::{self, flash_card},
-    state::StackableView,
-    theme::Theme,
-    ui::{button::button::Button, clickable::Clickable},
+    models::collection::{self, Collection}, repositories::{self, flash_card}, state::StackableView, theme::Theme, ui::{button::button::Button, clickable::Clickable}
 };
 
 pub struct FlashCard {
@@ -27,14 +24,13 @@ impl FlashCard {
         .into()
     }
 
-    pub fn next_card(&mut self, rate: u8) {
+    pub fn next_card(&mut self, rate: u8, collection: &Collection) {
         if self.show_answer {
             self.show_answer = false;
             let card = self.cards.get_mut(self.current_card).unwrap();
             card.rate(rate);
 
-            let conn = Connection::open("anki-rs.db").unwrap();
-            card.save(&conn).unwrap_or_else(|e| {
+            card.save(&collection.storage.conn).unwrap_or_else(|e| {
                 println!("Error saving card: {:?}", e);
             });
 
@@ -45,10 +41,11 @@ impl FlashCard {
     }
 
     fn key_down(&mut self, event: &KeyDownEvent, cx: &mut ViewContext<Self>) {
-        // println!("key_down: {:?}", event.keystroke.key.as_str());
+        let collection = cx.global::<crate::Collection>();
+
         match event.keystroke.key.as_str() {
             "enter" | "space" => {
-                self.next_card(3);
+                self.next_card(3, collection);
                 cx.notify();
             }
             _ => {

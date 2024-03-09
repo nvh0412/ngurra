@@ -5,26 +5,27 @@ mod models;
 mod ngurra;
 mod repositories;
 mod state;
+mod storage;
 mod theme;
 mod ui;
+mod errors;
 
 use db::init_db;
 use gpui::*;
 use ngurra::Ngurra;
 pub use repositories::deck::Deck;
 pub use repositories::flash_card::FlashCard;
-use rusqlite::Connection;
 
-use std::io::{IsTerminal, Write};
+use std::{io::{IsTerminal, Write}, path::PathBuf};
 
-use crate::{assets::Assets, theme::Theme};
+use crate::{assets::Assets, models::collection::{Collection, CollectionBuilder}, theme::Theme};
 
 fn main() {
-    if let Ok(conn) = Connection::open("anki-rs.db") {
-        init_db(&conn).unwrap();
-    } else {
-        panic!("Failed to open database");
-    }
+    let collection = CollectionBuilder::new(PathBuf::from("anki-rs.db")).build().unwrap_or_else(|e| {
+        panic!("Error opening collection: {:?}", e);
+    });
+
+    init_db(&collection.storage.conn).unwrap();
 
     init_logger();
 
@@ -32,6 +33,7 @@ fn main() {
     App::new().with_assets(Assets).run(|cx: &mut AppContext| {
         ngurra::init(cx);
         Theme::init(cx);
+        Collection::init(collection, cx);
 
         cx.open_window(
             WindowOptions {

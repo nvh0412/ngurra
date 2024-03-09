@@ -2,13 +2,10 @@ use gpui::{
     div, AnyView, FontWeight, IntoElement, ParentElement, Pixels, Render, Styled, ViewContext,
     VisualContext, WindowContext,
 };
-use rusqlite::Connection;
+
 
 use crate::{
-    state::{StackableView, StackableViewState},
-    theme::Theme,
-    ui::{button::button::Button, clickable::Clickable},
-    Deck, FlashCard,
+    models::collection::{self, Collection}, state::{StackableView, StackableViewState}, theme::Theme, ui::{button::button::Button, clickable::Clickable}, Deck, FlashCard
 };
 
 use super::flash_card::FlashCardBuilder;
@@ -22,11 +19,9 @@ impl DeckDetail {
         cx.new_view(|_vc| Self { deck_id }).into()
     }
 
-    fn get_deck(&self) -> Deck {
-        let conn = Connection::open("anki-rs.db").unwrap();
-
-        let mut deck = Deck::load(self.deck_id, &conn).unwrap();
-        deck.cards = FlashCard::get_all_cards_in_deck(deck.id.unwrap(), &conn, 10).unwrap();
+    fn get_deck(&self, collection: &Collection) -> Deck {
+        let mut deck = Deck::load(self.deck_id, &collection.storage.conn).unwrap();
+        deck.cards = FlashCard::get_all_cards_in_deck(deck.id.unwrap(), &collection.storage.conn, 10).unwrap();
         deck
     }
 }
@@ -34,7 +29,8 @@ impl DeckDetail {
 impl Render for DeckDetail {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let theme = cx.global::<Theme>();
-        let deck = self.get_deck();
+        let collection = cx.global::<collection::Collection>();
+        let deck = self.get_deck(collection);
 
         let stats = deck.get_deck_stats();
 
