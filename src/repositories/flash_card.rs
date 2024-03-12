@@ -40,7 +40,7 @@ impl FromSql for CardQueue {
 
 #[derive(Clone)]
 pub struct FlashCard {
-    id: Option<i32>,
+    pub id: Option<u32>,
     deck_id: u32,
     question: String,
     answer: String,
@@ -155,6 +155,76 @@ impl FlashCard {
         Ok(cards)
     }
 
+    pub fn for_each_new_card_in_deck<F>(
+        conn: &Connection,
+        deck_id: u32,
+        queue: CardQueue,
+        mut func: F,
+    ) -> Result<()>
+    where
+        F: FnMut(&FlashCard) -> (),
+    {
+        let mut stmt = conn.prepare(include_str!("query_cards_in_deck_by_queue.sql"))?;
+
+        let mut rows = stmt.query(params![deck_id, queue as i8])?;
+        while let row = rows.next()? {
+            if let None = row {
+                break;
+            }
+
+            let row = row.unwrap();
+
+            let creation_time: String = row.get(4)?;
+            let creation_time = DateTime::parse_from_rfc3339(&creation_time)
+                .unwrap()
+                .naive_utc();
+            let creation_time = OffsetDateTime::from_unix_timestamp(creation_time.timestamp())
+                .unwrap()
+                .into();
+
+            let last_studied_time: Result<String> = row.get(5);
+
+            let last_studied_time = if let Ok(last_studied_time) = last_studied_time {
+                let last_studied_time = DateTime::parse_from_rfc3339(&last_studied_time);
+
+                match last_studied_time {
+                    Ok(last_studied_time) => {
+                        let last_studied_time = last_studied_time.naive_utc();
+                        let last_studied_time =
+                            OffsetDateTime::from_unix_timestamp(last_studied_time.timestamp())
+                                .unwrap()
+                                .into();
+
+                        Some(last_studied_time)
+                    }
+                    Err(e) => {
+                        println!("Error parsing last_studied_time: {}", e);
+                        None
+                    }
+                }
+            } else {
+                None
+            };
+
+            let card = FlashCard {
+                id: Some(row.get(0)?),
+                deck_id: row.get(1)?,
+                question: row.get(2)?,
+                answer: row.get(3)?,
+                creation_time,
+                last_studied_time,
+                ef: row.get(6)?,
+                interval: row.get(7)?,
+                due: row.get(8)?,
+                queue: row.get(9)?,
+            };
+
+            func(&card);
+        }
+
+        Ok(())
+    }
+
     /// Loads a card from the database by its ID.
     ///
     /// # Arguments
@@ -165,7 +235,7 @@ impl FlashCard {
     /// # Returns
     ///
     /// A `Result` containing the loaded card, or an error if the operation fails.
-    pub fn load(id: i32, conn: &Connection) -> Result<FlashCard> {
+    pub fn load(id: u32, conn: &Connection) -> Result<FlashCard> {
         let mut stmt = conn.prepare(
             "SELECT id, deck_id, question, answer, creation_time, last_studied_time, ef, interval, queue, due FROM cards WHERE id = ?"
         )?;
@@ -264,7 +334,7 @@ impl FlashCard {
                 ])?;
 
                 let id = conn.last_insert_rowid();
-                self.id = Some(id as i32);
+                self.id = Some(id as u32);
             }
         }
 

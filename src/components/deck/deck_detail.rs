@@ -4,11 +4,15 @@ use gpui::{
 };
 
 use crate::{
-    models::collection::{self, Collection},
+    models::{
+        builder::Builder,
+        collection::{self, Collection},
+        queue::QueueBuilder,
+    },
     state::{StackableView, StackableViewState},
     theme::Theme,
     ui::{button::button::Button, clickable::Clickable},
-    Deck, FlashCard,
+    Deck,
 };
 
 use super::flash_card::FlashCardBuilder;
@@ -23,19 +27,19 @@ impl DeckDetail {
     }
 
     fn get_deck(&self, collection: &Collection) -> Deck {
-        let mut deck = Deck::load(self.deck_id, &collection.storage.conn).unwrap();
-        deck.cards =
-            FlashCard::get_all_cards_in_deck(deck.id.unwrap(), &collection.storage.conn, 10)
-                .unwrap();
-        deck
+        Deck::load(self.deck_id, &collection.storage.conn).unwrap()
     }
 }
 
 impl Render for DeckDetail {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let theme = cx.global::<Theme>();
-        let collection = cx.global::<collection::Collection>();
-        let deck = self.get_deck(collection);
+        let col = cx.global::<collection::Collection>();
+        let deck = self.get_deck(col);
+
+        let mut queue_builder = QueueBuilder::new(self.deck_id);
+        queue_builder.collect_cards(&col);
+        let card_queue = queue_builder.build().unwrap();
 
         let stats = deck.get_deck_stats();
 
@@ -101,7 +105,12 @@ impl Render for DeckDetail {
                             Button::new("study-btn", "Study Now").on_click(move |_e, cx| {
                                 StackableViewState::update(
                                     |state, cx| {
-                                        state.push(FlashCardBuilder { cards: &deck.cards }, cx)
+                                        state.push(
+                                            FlashCardBuilder {
+                                                card_queue: &card_queue,
+                                            },
+                                            cx,
+                                        )
                                     },
                                     cx,
                                 );

@@ -1,7 +1,12 @@
+use std::collections::VecDeque;
+
 use gpui::*;
 
 use crate::{
-    models::collection::Collection,
+    models::{
+        collection::Collection,
+        queue::{Queue, QueueEntry},
+    },
     repositories::flash_card,
     state::StackableView,
     theme::Theme,
@@ -10,18 +15,16 @@ use crate::{
 
 pub struct FlashCard {
     pub focus_handle: FocusHandle,
-    cards: Vec<flash_card::FlashCard>,
-    current_card: usize,
+    queue: VecDeque<QueueEntry>,
     show_answer: bool,
 }
 
 impl FlashCard {
-    pub fn view(cx: &mut WindowContext, cards: Vec<flash_card::FlashCard>) -> AnyView {
+    pub fn view(cx: &mut WindowContext, card_queue: &Queue) -> AnyView {
         let focus_handle = cx.focus_handle();
         cx.new_view(|vc| Self {
             focus_handle,
-            cards,
-            current_card: 0,
+            queue: card_queue.core.clone(),
             show_answer: false,
         })
         .into()
@@ -30,14 +33,16 @@ impl FlashCard {
     pub fn next_card(&mut self, rate: u8, collection: &Collection) {
         if self.show_answer {
             self.show_answer = false;
-            let card = self.cards.get_mut(self.current_card).unwrap();
+            let current_card = self.queue.pop_back().unwrap();
+
+            let mut card =
+                flash_card::FlashCard::load(current_card.card_id as u32, &collection.storage.conn)
+                    .unwrap();
             card.rate(rate);
 
             card.save(&collection.storage.conn).unwrap_or_else(|e| {
                 println!("Error saving card: {:?}", e);
             });
-
-            self.current_card += 1;
         } else {
             self.show_answer = true;
         }
@@ -57,7 +62,16 @@ impl FlashCard {
         };
     }
 
-    fn again_click(&mut self, event: &ClickEvent, cx: &mut ViewContext<Self>) {}
+    fn again_click(&mut self, _event: &ClickEvent, cx: &mut ViewContext<Self>) {
+        if self.show_answer {
+            self.show_answer = false;
+            let card = self.queue.pop_back().unwrap();
+            self.queue.push_front(card);
+        } else {
+            self.show_answer = true;
+        }
+        cx.notify();
+    }
 
     fn render_congrats(&self, cx: &ViewContext<Self>) -> impl IntoElement {
         let theme = cx.global::<Theme>();
@@ -93,10 +107,10 @@ impl FlashCard {
 impl Render for FlashCard {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         cx.focus(&self.focus_handle);
-
+        let collection = cx.global::<crate::Collection>();
         let theme: &Theme = cx.global::<Theme>();
 
-        if self.current_card >= self.cards.len() {
+        if self.queue.is_empty() {
             return div()
                 .flex()
                 .track_focus(&self.focus_handle)
@@ -105,7 +119,9 @@ impl Render for FlashCard {
                 .child(div().mt_20().child(self.render_congrats(cx)));
         }
 
-        let card = self.cards.get(self.current_card).unwrap();
+        let id = self.queue.back().unwrap().card_id;
+
+        let card = flash_card::FlashCard::load(id, &collection.storage.conn).unwrap();
         let answer = if self.show_answer {
             div().pt_5().child(card.get_answer().to_string())
         } else {
@@ -162,11 +178,11 @@ impl Render for FlashCard {
 }
 
 pub struct FlashCardBuilder<'a> {
-    pub cards: &'a Vec<flash_card::FlashCard>,
+    pub card_queue: &'a Queue,
 }
 
 impl<'a> StackableView for FlashCardBuilder<'a> {
     fn build(&self, cx: &mut WindowContext) -> AnyView {
-        FlashCard::view(cx, self.cards.clone().into())
+        FlashCard::view(cx, self.card_queue)
     }
 }

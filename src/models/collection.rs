@@ -4,7 +4,10 @@ use gpui::{AppContext, Global};
 
 use crate::{errors::Result, storage::sqlite::SqliteStorage};
 
-use super::{builder::Builder, queue::{Queue, QueueBuilder}};
+use super::{
+    builder::Builder,
+    queue::{Queue, QueueBuilder},
+};
 
 pub struct CollectionBuilder {
     collection_path: Option<PathBuf>,
@@ -28,18 +31,18 @@ impl Builder for CollectionBuilder {
     type OutputType = Collection;
 
     fn build(&mut self) -> Result<Collection> {
-        let col_path = self.collection_path.clone().unwrap_or_else(|| PathBuf::from(":memory:"));
+        let col_path = self
+            .collection_path
+            .clone()
+            .unwrap_or_else(|| PathBuf::from(":memory:"));
 
         let storage = SqliteStorage::open_or_create(&col_path)?;
 
-        let mut col = Collection {
+        let col = Collection {
             storage,
             col_path,
-            card_queues: None
+            card_queues: None,
         };
-
-        let mut queue_builder = QueueBuilder::new(&col, self.deck_id.unwrap_or(0));
-        col.card_queues = Some(queue_builder.build().unwrap());
 
         Ok(col)
     }
