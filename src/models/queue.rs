@@ -4,24 +4,37 @@ use rusqlite::Connection;
 
 use crate::{errors::Result, repositories::flash_card::CardQueue, FlashCard};
 
-use super::{builder::Builder, collection::Collection, deck};
+use super::{
+    builder::Builder, card::get_current_card_state, collection::Collection,
+    states::card_state::CardState,
+};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Stats {
     pub new: usize,
     pub learning: usize,
     pub review: usize,
 }
 
-#[derive(Debug)]
+#[derive(Clone)]
 pub struct Queue {
     pub stats: Stats,
     pub core: VecDeque<QueueEntry>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
+pub struct SchedulingStates {
+    pub current: CardState,
+    pub again: CardState,
+    pub hard: CardState,
+    pub good: CardState,
+    pub easy: CardState,
+}
+
+#[derive(Clone)]
 pub struct QueueEntry {
     pub card_id: u32,
+    pub states: SchedulingStates,
 }
 
 pub struct QueueBuilder {
@@ -46,26 +59,32 @@ impl QueueBuilder {
     }
 
     fn collect_new_cards(&mut self, conn: &Connection) {
-        FlashCard::for_each_new_card_in_deck(&conn, self.deck_id, CardQueue::New, |card| {
+        FlashCard::for_each_card_in_deck(&conn, self.deck_id, CardQueue::New, |card| {
             self.new.push(card.clone());
         })
         .unwrap_or_else(|e| {
             println!("Error collecting new cards: {:?}", e);
         });
 
-        FlashCard::for_each_new_card_in_deck(&conn, self.deck_id, CardQueue::Learning, |card| {
+        FlashCard::for_each_card_in_deck(&conn, self.deck_id, CardQueue::Learning, |card| {
             self.learning.push(card.clone());
         })
         .unwrap_or_else(|e| {
             println!("Error collecting learning cards: {:?}", e);
         });
 
-        FlashCard::for_each_new_card_in_deck(&conn, self.deck_id, CardQueue::Review, |card| {
+        FlashCard::for_each_card_in_deck(&conn, self.deck_id, CardQueue::Review, |card| {
             self.review.push(card.clone());
         })
         .unwrap_or_else(|e| {
             println!("Error collecting learning cards: {:?}", e);
         });
+    }
+
+    fn get_scheduling_states(&self, card: &FlashCard) -> SchedulingStates {
+        let current_state: CardState = get_current_card_state(card);
+
+        current_state.next_states()
     }
 }
 
@@ -79,21 +98,18 @@ impl Builder for QueueBuilder {
 
         let mut core_queue: VecDeque<QueueEntry> = VecDeque::new();
 
-        self.review.iter().for_each(|card| {
-            core_queue.push_back(QueueEntry {
-                card_id: card.id.unwrap(),
-            });
-        });
+        let cards = self
+            .review
+            .iter()
+            .chain(self.learning.iter())
+            .chain(self.new.iter());
 
-        self.learning.iter().for_each(|card| {
-            core_queue.push_back(QueueEntry {
-                card_id: card.id.unwrap(),
-            });
-        });
+        cards.for_each(|card| {
+            let states = self.get_scheduling_states(card);
 
-        self.new.iter().for_each(|card| {
             core_queue.push_back(QueueEntry {
                 card_id: card.id.unwrap(),
+                states,
             });
         });
 

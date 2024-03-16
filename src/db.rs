@@ -22,6 +22,7 @@ pub fn init_db(conn: &Connection) -> Result<()> {
             interval INTEGER NOT NULL,
             queue integer NOT NULL,
             due integer NOT NULL,
+            data text NOT NULL,
             FOREIGN KEY(deck_id) REFERENCES decks(id)
         )",
         [],

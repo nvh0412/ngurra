@@ -1,6 +1,5 @@
 SELECT
   id,
-  deck_id,
   question,
   answer,
   creation_time,
@@ -14,4 +13,3 @@ FROM
   cards
 WHERE
   deck_id = ?
-  AND queue = ?

@@ -1,6 +1,7 @@
 use std::time::{Duration, SystemTime};
 
 use chrono::{DateTime, Utc};
+use fsrs::MemoryState;
 use rusqlite::{
     params,
     types::{FromSql, ValueRef},
@@ -9,6 +10,8 @@ use rusqlite::{
 
 use time::OffsetDateTime;
 
+use super::card_data::CardData;
+
 #[derive(PartialEq, Debug, Clone)]
 pub enum Status {
     New,
@@ -16,7 +19,7 @@ pub enum Status {
     Due,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum CardQueue {
     New = 0,
     Learning = 1,
@@ -47,9 +50,11 @@ pub struct FlashCard {
     creation_time: SystemTime,
     last_studied_time: Option<SystemTime>,
     ef: f32,
-    interval: f64,
-    due: i32,
+    pub interval: f64,
+    pub due: i32,
     queue: CardQueue,
+    data: CardData,
+    memory_state: Option<MemoryState>,
 }
 
 impl FlashCard {
@@ -65,6 +70,14 @@ impl FlashCard {
             interval: 1.0,
             due: 0,
             queue: CardQueue::New,
+            data: CardData {
+                original_position: None,
+                fsrs_stability: None,
+                fsrs_difficulty: None,
+                fsrs_desired_retention: None,
+                custom_data: String::from("{}"),
+            },
+            memory_state: None,
         }
     }
 
@@ -84,78 +97,15 @@ impl FlashCard {
         self.queue = queue;
     }
 
-    /// Retrieves all cards in the specified deck from the database.
-    ///
-    /// # Arguments
-    ///
-    /// * `deck_id` - The ID of the deck to retrieve cards from.
-    /// * `conn` - The database connection.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` containing a vector of `FlashCard` instances.
-    pub fn get_all_cards_in_deck(
-        deck_id: u32,
-        conn: &Connection,
-        limit: i16,
-    ) -> Result<Vec<FlashCard>> {
-        let mut stmt = conn.prepare("SELECT id, question, answer, creation_time, last_studied_time, ef, interval, due, queue FROM cards WHERE deck_id = ?")?;
-        let card_iter = stmt.query_map(&[&deck_id.to_string()], |row| {
-            let creation_time: String = row.get(3)?;
-            let creation_time = DateTime::parse_from_rfc3339(&creation_time)
-                .unwrap()
-                .naive_utc();
-            let creation_time = OffsetDateTime::from_unix_timestamp(creation_time.timestamp())
-                .unwrap()
-                .into();
-
-            let last_studied_time: Result<String> = row.get(4);
-
-            let last_studied_time = if let Ok(last_studied_time) = last_studied_time {
-                let last_studied_time = DateTime::parse_from_rfc3339(&last_studied_time);
-
-                match last_studied_time {
-                    Ok(last_studied_time) => {
-                        let last_studied_time = last_studied_time.naive_utc();
-                        let last_studied_time =
-                            OffsetDateTime::from_unix_timestamp(last_studied_time.timestamp())
-                                .unwrap()
-                                .into();
-
-                        Some(last_studied_time)
-                    }
-                    Err(e) => {
-                        println!("Error parsing last_studied_time: {}", e);
-                        None
-                    }
-                }
-            } else {
-                None
-            };
-
-            Ok(FlashCard {
-                id: Some(row.get(0)?),
-                deck_id,
-                question: row.get(1)?,
-                answer: row.get(2)?,
-                creation_time,
-                last_studied_time,
-                ef: row.get(5)?,
-                interval: row.get(6)?,
-                due: row.get(7).ok().unwrap_or_default(),
-                queue: row.get(8)?,
-            })
-        })?;
-
-        let mut cards = Vec::new();
-        for card in card_iter {
-            cards.push(card?);
-        }
-
-        Ok(cards)
+    pub fn get_queue(&self) -> &CardQueue {
+        &self.queue
     }
 
-    pub fn for_each_new_card_in_deck<F>(
+    pub fn ease_factor(&self) -> f32 {
+        (self.ef as f32) / 1000.0
+    }
+
+    pub fn for_each_card_in_deck<F>(
         conn: &Connection,
         deck_id: u32,
         queue: CardQueue,
@@ -206,6 +156,8 @@ impl FlashCard {
                 None
             };
 
+            let card_data: CardData = row.get(10)?;
+
             let card = FlashCard {
                 id: Some(row.get(0)?),
                 deck_id: row.get(1)?,
@@ -217,6 +169,8 @@ impl FlashCard {
                 interval: row.get(7)?,
                 due: row.get(8)?,
                 queue: row.get(9)?,
+                memory_state: card_data.memory_state(),
+                data: card_data,
             };
 
             func(&card);
@@ -236,9 +190,7 @@ impl FlashCard {
     ///
     /// A `Result` containing the loaded card, or an error if the operation fails.
     pub fn load(id: u32, conn: &Connection) -> Result<FlashCard> {
-        let mut stmt = conn.prepare(
-            "SELECT id, deck_id, question, answer, creation_time, last_studied_time, ef, interval, queue, due FROM cards WHERE id = ?"
-        )?;
+        let mut stmt = conn.prepare(include_str!("get_card.sql"))?;
 
         let deck = stmt.query_row(&[&id], |row| {
             let creation_time: String = row.get(4)?;
@@ -265,6 +217,8 @@ impl FlashCard {
                 None
             };
 
+            let data: CardData = row.get(10)?;
+
             Ok(FlashCard {
                 id: Some(row.get(0)?),
                 deck_id: row.get(1)?,
@@ -276,6 +230,8 @@ impl FlashCard {
                 interval: row.get(7)?,
                 due: row.get(8).ok().unwrap_or_default(),
                 queue: row.get(9)?,
+                memory_state: data.memory_state(),
+                data,
             })
         })?;
 
@@ -398,26 +354,6 @@ mod test {
     use super::*;
 
     #[test]
-    fn get_all_cards_in_deck() {
-        let conn = Connection::open_in_memory().unwrap();
-        init_db(&conn).unwrap();
-
-        let mut deck = Deck::new("Test Deck");
-        deck.save(&conn).unwrap();
-
-        let mut card = FlashCard::new(
-            deck.id.unwrap(),
-            "What is the capital of France?",
-            "Paris",
-            None,
-        );
-        card.save(&conn).unwrap();
-
-        let cards = FlashCard::get_all_cards_in_deck(deck.id.unwrap(), &conn, 10).unwrap();
-        assert_eq!(cards.len(), 1);
-    }
-
-    #[test]
     fn load() {
         let conn = Connection::open_in_memory().unwrap();
         init_db(&conn).unwrap();
@@ -474,9 +410,6 @@ mod test {
         card.save(&conn).unwrap();
 
         card.delete(&conn).unwrap();
-
-        let cards = FlashCard::get_all_cards_in_deck(deck.id.unwrap(), &conn, 10).unwrap();
-        assert_eq!(cards.len(), 0);
     }
 
     #[test]

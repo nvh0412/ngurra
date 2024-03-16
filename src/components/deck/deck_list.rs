@@ -115,7 +115,7 @@ impl RenderOnce for HocListItem {
             .p_2()
             .border_1()
             .rounded_xl()
-            .on_mouse_down(gpui::MouseButton::Left, move |e, cx| {
+            .on_mouse_down(gpui::MouseButton::Left, move |_e, cx| {
                 StackableViewState::update(
                     |state, cx| {
                         state.push(

@@ -7,11 +7,10 @@ SELECT
   last_studied_time,
   ef,
   interval,
-  due,
   queue,
+  due,
   data
 FROM
   cards
 WHERE
-  deck_id = ?
-  AND queue = ?
+  id = ?

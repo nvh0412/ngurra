@@ -4,26 +4,17 @@ use gpui::{AppContext, Global};
 
 use crate::{errors::Result, storage::sqlite::SqliteStorage};
 
-use super::{
-    builder::Builder,
-    queue::{Queue, QueueBuilder},
-};
+use super::{builder::Builder, queue::Queue};
 
 pub struct CollectionBuilder {
     collection_path: Option<PathBuf>,
-    deck_id: Option<usize>,
 }
 
 impl CollectionBuilder {
     pub fn new(col_path: PathBuf) -> Self {
         CollectionBuilder {
             collection_path: Some(col_path),
-            deck_id: None,
         }
-    }
-
-    pub fn set_deck_id(&mut self, deck_id: usize) {
-        self.deck_id = Some(deck_id);
     }
 }
 

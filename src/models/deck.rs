@@ -7,12 +7,7 @@ pub fn get_decks(conn: &Connection) -> Vec<Deck> {
     let decks_res = Deck::get_all_decks(&conn);
 
     match decks_res {
-        Ok(mut decks) => {
-            decks.iter_mut().for_each(|d| {
-                d.cards = FlashCard::get_all_cards_in_deck(d.id.unwrap(), &conn, 10).unwrap();
-            });
-            decks
-        }
+        Ok(mut decks) => decks,
         Err(e) => {
             eprintln!("Error getting decks: {}", e);
             vec![]

@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
-use gpui::{div, prelude::*, EventEmitter, Render, StyleRefinement, View, WindowContext};
+use gpui::{div, prelude::*, EventEmitter, Render, View, WindowContext};
 
 use crate::theme::Theme;
 
@@ -42,7 +42,7 @@ pub enum TabEvent {
 impl EventEmitter<TabEvent> for TabBarView {}
 
 impl Render for TabBarView {
-    fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl IntoElement {}
+    fn render(&mut self, _cx: &mut gpui::ViewContext<Self>) -> impl IntoElement {}
 }
 
 impl RenderOnce for TabBarContainer {
