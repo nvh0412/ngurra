@@ -53,8 +53,8 @@ pub struct FlashCard {
     pub interval: f64,
     pub due: i32,
     queue: CardQueue,
-    data: CardData,
-    memory_state: Option<MemoryState>,
+    pub data: CardData,
+    pub memory_state: Option<MemoryState>,
 }
 
 impl FlashCard {
@@ -260,15 +260,17 @@ impl FlashCard {
         match self.id {
             Some(id) => {
                 conn.execute(
-                    "UPDATE cards SET question = ?, answer = ?, deck_id = ?, ef = ?, interval = ?, last_studied_time = ? WHERE id = ?",
-                    &[
-                        &self.question,
-                        &self.answer,
-                        &self.deck_id.to_string(),
-                        &self.ef.to_string(),
-                        &self.interval.to_string(),
-                        &last_studied_time.to_string(),
-                        &id.to_string()
+                    "UPDATE cards SET question = ?, answer = ?, deck_id = ?, ef = ?, interval = ?, last_studied_time = ?, due = ?, queue = ? WHERE id = ?",
+                    params![
+                        self.question,
+                        self.answer,
+                        self.deck_id.to_string(),
+                        self.ef.to_string(),
+                        self.interval.to_string(),
+                        last_studied_time.to_string(),
+                        self.due,
+                        self.queue.clone() as i8,
+                        id.to_string(),
                     ]
                 )?;
             }

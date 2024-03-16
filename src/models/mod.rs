@@ -1,3 +1,4 @@
+pub mod answer;
 pub mod builder;
 pub mod card;
 pub mod collection;

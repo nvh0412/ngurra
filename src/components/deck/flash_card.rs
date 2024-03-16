@@ -4,6 +4,7 @@ use gpui::*;
 
 use crate::{
     models::{
+        answer::Answer,
         collection::Collection,
         queue::{Queue, QueueEntry},
     },
@@ -22,7 +23,7 @@ pub struct FlashCard {
 impl FlashCard {
     pub fn view(cx: &mut WindowContext, card_queue: &Queue) -> AnyView {
         let focus_handle = cx.focus_handle();
-        cx.new_view(|vc| Self {
+        cx.new_view(|_| Self {
             focus_handle,
             queue: card_queue.core.clone(),
             show_answer: false,
@@ -30,19 +31,12 @@ impl FlashCard {
         .into()
     }
 
-    pub fn next_card(&mut self, rate: u8, collection: &Collection) {
+    pub fn answer(&mut self, answer: Answer, collection: &Collection) {
         if self.show_answer {
             self.show_answer = false;
             let current_card = self.queue.pop_back().unwrap();
 
-            let mut card =
-                flash_card::FlashCard::load(current_card.card_id as u32, &collection.storage.conn)
-                    .unwrap();
-            card.rate(rate);
-
-            card.save(&collection.storage.conn).unwrap_or_else(|e| {
-                println!("Error saving card: {:?}", e);
-            });
+            collection.answer_card(current_card.card_id as u32, answer);
         } else {
             self.show_answer = true;
         }
@@ -53,7 +47,7 @@ impl FlashCard {
 
         match event.keystroke.key.as_str() {
             "enter" | "space" => {
-                self.next_card(3, collection);
+                self.answer(Answer::Good, collection);
                 cx.notify();
             }
             _ => {

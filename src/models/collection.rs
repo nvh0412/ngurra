@@ -2,9 +2,14 @@ use std::path::PathBuf;
 
 use gpui::{AppContext, Global};
 
-use crate::{errors::Result, storage::sqlite::SqliteStorage};
+use crate::{errors::Result, storage::sqlite::SqliteStorage, FlashCard};
 
-use super::{builder::Builder, queue::Queue};
+use super::{
+    answer::{self, Answer},
+    builder::Builder,
+    card::{self, apply_state, get_current_card_state},
+    queue::Queue,
+};
 
 pub struct CollectionBuilder {
     collection_path: Option<PathBuf>,
@@ -48,6 +53,34 @@ pub struct Collection {
 impl Collection {
     pub fn init(col: Self, cx: &mut AppContext) {
         cx.set_global(col);
+    }
+
+    pub fn answer_card(&self, card_id: u32, answer: Answer) {
+        let mut card = FlashCard::load(card_id, &self.storage.conn).unwrap();
+
+        let current_card_state = get_current_card_state(&card);
+        let next_state = current_card_state.next_states();
+
+        match answer {
+            Answer::Again => {
+                let next = next_state.again;
+                apply_state(&mut card, next);
+            }
+            Answer::Hard => {
+                let next = next_state.hard;
+                apply_state(&mut card, next);
+            }
+            Answer::Good => {
+                let next = next_state.good;
+                apply_state(&mut card, next);
+            }
+            Answer::Easy => {
+                let next = next_state.easy;
+                apply_state(&mut card, next);
+            }
+        }
+
+        card.save(&self.storage.conn).unwrap();
     }
 }
 

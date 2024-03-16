@@ -20,6 +20,23 @@ pub fn get_current_card_state(card: &FlashCard) -> CardState {
             memory_state: None,
         }
         .into(),
-        CardQueue::Review => ReviewState {}.into(),
+        CardQueue::Review => ReviewState { memory_state: None }.into(),
+    }
+}
+
+pub fn apply_state(card: &mut FlashCard, next: CardState) {
+    match next {
+        CardState::New(_) => {
+            card.set_queue(CardQueue::New);
+        }
+        CardState::Learning(next_learning_state) => {
+            card.set_queue(CardQueue::Learning);
+            card.memory_state = next_learning_state.memory_state;
+        }
+        CardState::Review(next_review_state) => {
+            card.set_queue(CardQueue::Review);
+            card.memory_state = next_review_state.memory_state;
+        }
+        _ => {}
     }
 }
