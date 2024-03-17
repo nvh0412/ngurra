@@ -6,7 +6,9 @@ use super::{
 };
 
 #[derive(Clone)]
-pub struct NewState {}
+pub struct NewState {
+    pub position: u32,
+}
 
 impl CardStateTrait for NewState {
     fn next_states(self) -> SchedulingStates {

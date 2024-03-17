@@ -50,7 +50,7 @@ pub struct FlashCard {
     creation_time: SystemTime,
     last_studied_time: Option<SystemTime>,
     ef: f32,
-    pub interval: f64,
+    pub interval: u32,
     pub due: i32,
     queue: CardQueue,
     pub data: CardData,
@@ -67,7 +67,7 @@ impl FlashCard {
             creation_time: SystemTime::now(),
             last_studied_time: None,
             ef: ef.unwrap_or(2.5),
-            interval: 1.0,
+            interval: 1,
             due: 0,
             queue: CardQueue::New,
             data: CardData {
@@ -316,7 +316,7 @@ impl FlashCard {
 
     pub fn get_status(&self) -> Status {
         let current_time = SystemTime::now();
-        let interval_duration = Duration::from_secs((self.interval * 24.0 * 60.0 * 60.0) as u64);
+        let interval_duration = Duration::from_secs((self.interval * 24 * 60 * 60) as u64);
 
         if let Some(last_studied_time) = self.last_studied_time {
             if current_time > last_studied_time + interval_duration {
@@ -344,7 +344,7 @@ impl FlashCard {
         let ef = if ef < 1.3 { 1.3 } else { ef };
 
         self.ef = ef;
-        self.interval = self.interval * ef as f64;
+        self.interval = self.interval * ef as u32;
         self.last_studied_time = Some(SystemTime::now());
     }
 }
@@ -437,7 +437,7 @@ mod test {
         assert_eq!(card.get_status(), Status::Learning);
 
         card.last_studied_time = Some(SystemTime::now() - Duration::from_secs(60 * 60 * 24 * 2));
-        card.interval = 0.2;
+        card.interval = 1;
         card.save(&conn).unwrap();
 
         assert_eq!(card.get_status(), Status::Due);
@@ -465,7 +465,7 @@ mod test {
 
         card.rate(5);
         assert_eq!(card.ef, 2.6);
-        assert_eq!(card.interval, old_interval * card.ef as f64);
+        assert_eq!(card.interval, old_interval * card.ef as u32);
 
         card.rate(4);
         assert_eq!(card.ef, 2.6);

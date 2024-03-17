@@ -1,6 +1,10 @@
 use fsrs::MemoryState;
 
-use super::card_state::{CardState, CardStateTrait};
+use super::{
+    card_state::{CardState, CardStateTrait},
+    review_state::ReviewState,
+    state_context::StateContext,
+};
 use crate::models::queue::SchedulingStates;
 
 #[derive(Clone)]
@@ -27,7 +31,7 @@ impl LearningState {
     fn answer_again(&self) -> LearningState {
         LearningState {
             remaining_steps: 0,
-            scheduled_secs: 0,
+            scheduled_secs: 60,
             elapsed_secs: 0,
             memory_state: None,
         }
@@ -35,25 +39,29 @@ impl LearningState {
     fn answer_hard(&self) -> LearningState {
         LearningState {
             remaining_steps: 0,
-            scheduled_secs: 0,
+            scheduled_secs: 60,
             elapsed_secs: 0,
             memory_state: None,
         }
     }
-    fn answer_good(&self) -> LearningState {
-        LearningState {
-            remaining_steps: 0,
-            scheduled_secs: 0,
-            elapsed_secs: 0,
+
+    fn answer_good(&self) -> ReviewState {
+        let ctx = StateContext::default();
+
+        ReviewState {
+            ease_factor: ctx.initial_ease_factor,
             memory_state: None,
+            ..Default::default()
         }
     }
-    fn answer_easy(&self) -> LearningState {
-        LearningState {
-            remaining_steps: 0,
-            scheduled_secs: 0,
-            elapsed_secs: 0,
-            memory_state: None,
+
+    fn answer_easy(&self) -> ReviewState {
+        let ctx = StateContext::default();
+
+        ReviewState {
+            ease_factor: ctx.initial_ease_factor,
+            memory_state: self.memory_state.clone(),
+            ..Default::default()
         }
     }
 }

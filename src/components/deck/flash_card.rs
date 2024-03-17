@@ -57,13 +57,28 @@ impl FlashCard {
     }
 
     fn again_click(&mut self, _event: &ClickEvent, cx: &mut ViewContext<Self>) {
-        if self.show_answer {
-            self.show_answer = false;
-            let card = self.queue.pop_back().unwrap();
-            self.queue.push_front(card);
-        } else {
-            self.show_answer = true;
-        }
+        self.show_answer = false;
+        let card = self.queue.pop_back().unwrap();
+        self.queue.push_front(card);
+
+        cx.notify();
+    }
+
+    fn easy_click(&mut self, _event: &ClickEvent, cx: &mut ViewContext<Self>) {
+        let collection = cx.global::<crate::Collection>();
+        self.answer(Answer::Easy, collection);
+        cx.notify();
+    }
+
+    fn hard_click(&mut self, _event: &ClickEvent, cx: &mut ViewContext<Self>) {
+        let collection = cx.global::<crate::Collection>();
+        self.answer(Answer::Hard, collection);
+        cx.notify();
+    }
+
+    fn good_click(&mut self, _event: &ClickEvent, cx: &mut ViewContext<Self>) {
+        let collection = cx.global::<crate::Collection>();
+        self.answer(Answer::Good, collection);
         cx.notify();
     }
 
@@ -128,9 +143,9 @@ impl Render for FlashCard {
                     .flex()
                     .justify_between()
                     .child(Button::new("again", "Again").on_click(cx.listener(Self::again_click)))
-                    .child(Button::new("easy", "Easy"))
-                    .child(Button::new("good", "Good"))
-                    .child(Button::new("hard", "Hard")),
+                    .child(Button::new("easy", "Easy").on_click(cx.listener(Self::easy_click)))
+                    .child(Button::new("good", "Good").on_click(cx.listener(Self::good_click)))
+                    .child(Button::new("hard", "Hard").on_click(cx.listener(Self::hard_click))),
             )
         } else {
             div()

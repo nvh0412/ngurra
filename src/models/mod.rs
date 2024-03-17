@@ -5,3 +5,4 @@ pub mod collection;
 pub mod deck;
 pub mod queue;
 pub mod states;
+pub mod timing;
