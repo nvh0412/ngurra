@@ -23,7 +23,7 @@ impl CollectionBuilder {
         }
     }
 
-    pub(crate) fn timing_for_timestamp(&mut self, now: i64) -> SchedTimingToday {
+    pub(crate) fn timing_for_timestamp(now: i64) -> SchedTimingToday {
         // Get current utc offset from the system
         let days_elapsed = now / 86_400;
         let next_day_at = (days_elapsed + 1) * 86_400;
@@ -46,7 +46,7 @@ impl Builder for CollectionBuilder {
             .unwrap_or_else(|| PathBuf::from(":memory:"));
 
         let storage = SqliteStorage::open_or_create(&col_path)?;
-        let timing = self.timing_for_timestamp(Local::now().timestamp());
+        let timing = Self::timing_for_timestamp(Local::now().timestamp());
 
         let col = Collection {
             storage,

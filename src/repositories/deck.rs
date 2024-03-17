@@ -228,12 +228,15 @@ impl Deck {
         }
     }
 
-    pub fn get_decks_stats(conn: &Connection) -> Result<HashMap<u32, DeckStat>> {
+    pub fn get_decks_stats(conn: &Connection, day_elapsed: u32) -> Result<HashMap<u32, DeckStat>> {
         let params = named_params! {
             ":new_queue" : CardQueue::New as u8,
             ":learn_queue" : CardQueue::Learning as u8,
             ":review_queue" : CardQueue::Review as u8,
+            ":day_cutoff" : day_elapsed,
         };
+
+        println!("Day elapsed: {}", day_elapsed);
 
         conn.prepare(include_str!("query_decks_stats.sql"))?
             .query_and_then(params, row_to_deck_stat)?
