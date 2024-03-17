@@ -2,9 +2,13 @@ use std::path::PathBuf;
 
 use chrono::Local;
 use gpui::{AppContext, Global};
+use rusqlite::Connection;
 
 use crate::{
-    errors::Result, repositories::flash_card::CardQueue, storage::sqlite::SqliteStorage, FlashCard,
+    errors::Result,
+    repositories::{flash_card::CardQueue, session::Session},
+    storage::sqlite::SqliteStorage,
+    FlashCard,
 };
 
 use super::{
@@ -23,9 +27,10 @@ impl CollectionBuilder {
         }
     }
 
-    pub(crate) fn timing_for_timestamp(now: i64) -> SchedTimingToday {
+    pub(crate) fn timing_for_timestamp(conn: &Connection, now: i64) -> SchedTimingToday {
         // Get current utc offset from the system
-        let days_elapsed = now / 86_400;
+        let creation_stamp = Session::get_creation_stamp(conn).unwrap();
+        let days_elapsed = (now - creation_stamp) / 86_400;
         let next_day_at = (days_elapsed + 1) * 86_400;
 
         SchedTimingToday {
@@ -46,7 +51,7 @@ impl Builder for CollectionBuilder {
             .unwrap_or_else(|| PathBuf::from(":memory:"));
 
         let storage = SqliteStorage::open_or_create(&col_path)?;
-        let timing = Self::timing_for_timestamp(Local::now().timestamp());
+        let timing = Self::timing_for_timestamp(&storage.conn, Local::now().timestamp());
 
         let col = Collection {
             storage,
@@ -74,7 +79,7 @@ impl Collection {
     pub fn apply_state(&self, card: &mut FlashCard, next: CardState) {
         match next {
             CardState::New(next_new_state) => {
-                card.due = next_new_state.position as i32;
+                card.due = next_new_state.position as u32;
                 card.set_queue(CardQueue::New);
             }
             CardState::Learning(next_learning_state) => {
@@ -84,7 +89,7 @@ impl Collection {
             CardState::Review(next_review_state) => {
                 card.set_queue(CardQueue::Review);
                 card.interval = next_review_state.scheduled_days;
-                card.due = (self.timing.days_elapsed + next_review_state.scheduled_days) as i32;
+                card.due = (self.timing.days_elapsed + next_review_state.scheduled_days) as u32;
                 card.memory_state = next_review_state.memory_state;
             }
             _ => {}

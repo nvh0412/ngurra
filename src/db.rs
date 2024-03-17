@@ -28,5 +28,13 @@ pub fn init_db(conn: &Connection) -> Result<()> {
         [],
     )?;
 
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS sessions (
+            id INTEGER PRIMARY KEY,
+            creation_stamp INTEGER NOT NULL
+        )",
+        [],
+    )?;
+
     Ok(())
 }

@@ -10,7 +10,9 @@ use rusqlite::{
 
 use time::OffsetDateTime;
 
-use super::card_data::CardData;
+use crate::models::collection::CollectionBuilder;
+
+use super::{card_data::CardData, session::Session};
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Status {
@@ -51,7 +53,7 @@ pub struct FlashCard {
     last_studied_time: Option<SystemTime>,
     ef: f32,
     pub interval: u32,
-    pub due: i32,
+    pub due: u32,
     queue: CardQueue,
     pub data: CardData,
     pub memory_state: Option<MemoryState>,
@@ -115,8 +117,14 @@ impl FlashCard {
         F: FnMut(&FlashCard) -> (),
     {
         let mut stmt = conn.prepare(include_str!("query_cards_in_deck_by_queue.sql"))?;
+        let timing_at_stamp =
+            CollectionBuilder::timing_for_timestamp(conn, chrono::Local::now().timestamp());
 
-        let mut rows = stmt.query(params![deck_id, queue as i8])?;
+        let mut rows = stmt.query(params![
+            deck_id,
+            queue as i8,
+            timing_at_stamp.days_elapsed as u32
+        ])?;
         while let row = rows.next()? {
             if let None = row {
                 break;
@@ -228,8 +236,8 @@ impl FlashCard {
                 last_studied_time,
                 ef: row.get(6)?,
                 interval: row.get(7)?,
-                due: row.get(8).ok().unwrap_or_default(),
-                queue: row.get(9)?,
+                queue: row.get(8)?,
+                due: row.get(9)?,
                 memory_state: data.memory_state(),
                 data,
             })

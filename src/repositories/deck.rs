@@ -236,8 +236,6 @@ impl Deck {
             ":day_cutoff" : day_elapsed,
         };
 
-        println!("Day elapsed: {}", day_elapsed);
-
         conn.prepare(include_str!("query_decks_stats.sql"))?
             .query_and_then(params, row_to_deck_stat)?
             .collect()
@@ -366,7 +364,7 @@ mod test {
         let mut new_card = FlashCard::new(1, "Front", "Back", None);
         new_card.save(&conn).unwrap();
 
-        let stats = Deck::get_decks_stats(&conn).unwrap();
+        let stats = Deck::get_decks_stats(&conn, 1).unwrap();
 
         assert_eq!(stats.len(), 1);
         let deck_stat = stats.get(&deck.id.unwrap()).unwrap();

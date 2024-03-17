@@ -32,8 +32,11 @@ impl DeckListView {
 
     fn get_all_decks_and_stats(&self, collection: &Collection) -> Vec<Deck> {
         let decks = get_decks(&collection.storage.conn);
-        let timing_at_stamp =
-            CollectionBuilder::timing_for_timestamp(chrono::Local::now().timestamp());
+        let timing_at_stamp = CollectionBuilder::timing_for_timestamp(
+            &collection.storage.conn,
+            chrono::Local::now().timestamp(),
+        );
+
         let decks_stats =
             Deck::get_decks_stats(&collection.storage.conn, timing_at_stamp.days_elapsed).unwrap();
 

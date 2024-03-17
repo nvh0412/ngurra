@@ -15,3 +15,4 @@ FROM
 WHERE
   deck_id = ?
   AND queue = ?
+  AND due <= ?
