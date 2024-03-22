@@ -26,7 +26,7 @@ impl TabBarContainer {
 
 impl TabBarView {
     pub fn init(cx: &mut WindowContext) -> View<Self> {
-        let view = cx.new_view(|cx| TabBarView {});
+        let view = cx.new_view(|_cx| TabBarView {});
 
         view
     }

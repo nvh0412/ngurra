@@ -32,10 +32,6 @@ impl Icon {
         let name = to_kebap(binding.as_str());
         SharedString::from(format!("icons/{}.svg", name))
     }
-
-    pub fn get(icon: Icon) -> Self {
-        icon
-    }
 }
 
 impl fmt::Display for Icon {
