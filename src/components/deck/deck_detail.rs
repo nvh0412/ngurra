@@ -6,9 +6,10 @@ use gpui::{
 use crate::{
     models::{
         builder::Builder,
-        collection::{self, Collection},
+        collection::{self, Collection, CollectionBuilder},
         queue::QueueBuilder,
     },
+    repositories::deck::DeckStat,
     state::{StackableView, StackableViewState},
     theme::Theme,
     ui::{button::button::Button, clickable::Clickable},
@@ -35,13 +36,38 @@ impl Render for DeckDetail {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let theme = cx.global::<Theme>();
         let col = cx.global::<collection::Collection>();
-        let deck = self.get_deck(col);
+        let mut deck = self.get_deck(col);
+
+        let timing_at_stamp = CollectionBuilder::timing_for_timestamp(
+            &col.storage.conn,
+            chrono::Local::now().timestamp(),
+        );
+
+        let decks_stats =
+            Deck::get_decks_stats(&col.storage.conn, timing_at_stamp.days_elapsed).unwrap();
+
+        if let Some(st) = decks_stats.get(&deck.id.unwrap()) {
+            deck.stats = Some(DeckStat {
+                id: Some(deck.id.unwrap()),
+                new: st.new,
+                learning: st.learning,
+                due: st.due,
+            });
+        }
 
         let mut queue_builder = QueueBuilder::new(self.deck_id);
         queue_builder.collect_cards(&col);
         let card_queue = queue_builder.build().unwrap();
 
-        let stats = deck.get_deck_stats();
+        let stats = match deck.stats {
+            Some(stats) => stats,
+            None => DeckStat {
+                id: Some(deck.id.unwrap()),
+                new: 0,
+                learning: 0,
+                due: 0,
+            },
+        };
 
         div()
             .flex()

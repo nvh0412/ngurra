@@ -12,7 +12,7 @@ use time::OffsetDateTime;
 
 use crate::models::collection::CollectionBuilder;
 
-use super::{card_data::CardData, session::Session};
+use super::card_data::CardData;
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Status {

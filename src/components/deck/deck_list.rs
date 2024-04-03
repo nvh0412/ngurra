@@ -1,6 +1,6 @@
 use gpui::{
-    div, AnyView, InteractiveElement, IntoElement, ParentElement, Render, RenderOnce, Styled, View,
-    VisualContext, WindowContext,
+    div, AnyView, InteractiveElement, IntoElement, ParentElement, Pixels, Render, RenderOnce,
+    Styled, View, VisualContext, WindowContext,
 };
 
 use crate::{
@@ -11,10 +11,11 @@ use crate::{
     repositories::deck::DeckStat,
     state::{StackableView, StackableViewState},
     theme::Theme,
+    ui::{button::button::Button, clickable::Clickable},
     Deck,
 };
 
-use super::deck_detail::DeckDetailBuilder;
+use super::{deck_detail::DeckDetailBuilder, new_deck_form::NewDeckFormBuilder};
 
 pub struct DeckListView;
 
@@ -43,16 +44,24 @@ impl DeckListView {
         decks
             .into_iter()
             .map(|mut deck| {
-                let st = decks_stats.get(&deck.id.unwrap()).unwrap();
-                deck.stats = Some(DeckStat {
-                    id: Some(deck.id.unwrap()),
-                    new: st.new,
-                    learning: st.learning,
-                    due: st.due,
-                });
+                let st = decks_stats.get(&deck.id.unwrap());
+
+                if let Some(st) = st {
+                    deck.stats = Some(DeckStat {
+                        id: Some(deck.id.unwrap()),
+                        new: st.new,
+                        learning: st.learning,
+                        due: st.due,
+                    });
+                }
+
                 deck
             })
             .collect()
+    }
+
+    fn new_deck_click(&mut self, _event: &gpui::ClickEvent, cx: &mut gpui::ViewContext<Self>) {
+        StackableViewState::update(|state, cx| state.push(NewDeckFormBuilder {}, cx), cx);
     }
 }
 
@@ -61,42 +70,57 @@ impl Render for DeckListView {
         let theme = cx.global::<Theme>();
         let collection = cx.global::<crate::Collection>();
 
-        div().flex().size_full().justify_center().child(
-            div().mt_20().child(
-                div()
-                    .border_1()
-                    .border_color(theme.crust)
-                    .rounded_xl()
-                    .text_color(theme.text)
-                    .p_3()
-                    .child(
-                        div()
-                            .flex()
-                            .flex_row()
-                            .text_sm()
-                            .child(div().px_2().min_w_80().child(format!("Deck")))
-                            .child(div().min_w_20().flex().justify_center().child("New"))
-                            .child(div().min_w_20().flex().justify_center().child("Learn"))
-                            .child(div().min_w_20().flex().justify_center().child("Due"))
-                            .pb_2()
-                            .border_b_1()
-                            .border_color(theme.crust)
-                            .mb_2(),
-                    )
-                    .children(
-                        self.get_all_decks_and_stats(collection)
-                            .into_iter()
-                            .map(|deck| {
-                                let deck_id = deck.id.unwrap();
-                                HocListItem::init(
-                                    cx.new_view(|_| ListItem::new(deck)).into(),
-                                    deck_id,
-                                )
-                            })
-                            .collect::<Vec<_>>(),
+        div()
+            .flex()
+            .flex_col()
+            .size_full()
+            .justify_between()
+            .child(
+                div().mt_20().flex().justify_center().child(
+                    div()
+                        .border_1()
+                        .border_color(theme.crust)
+                        .rounded_xl()
+                        .text_color(theme.text)
+                        .p_3()
+                        .child(
+                            div()
+                                .flex()
+                                .flex_row()
+                                .text_sm()
+                                .child(div().px_2().min_w_80().child(format!("Deck")))
+                                .child(div().min_w_20().flex().justify_center().child("New"))
+                                .child(div().min_w_20().flex().justify_center().child("Learn"))
+                                .child(div().min_w_20().flex().justify_center().child("Due"))
+                                .pb_2()
+                                .border_b_1()
+                                .border_color(theme.crust)
+                                .mb_2(),
+                        )
+                        .children(
+                            self.get_all_decks_and_stats(collection)
+                                .into_iter()
+                                .map(|deck| {
+                                    let deck_id = deck.id.unwrap();
+                                    HocListItem::init(
+                                        cx.new_view(|_| ListItem::new(deck)).into(),
+                                        deck_id,
+                                    )
+                                })
+                                .collect::<Vec<_>>(),
+                        ),
+                ),
+            )
+            .child(
+                div().mb_16().flex().justify_center().child(
+                    div().w(Pixels(300.0)).flex().justify_center().child(
+                        div().child(
+                            Button::new("create_deck", "Create Deck")
+                                .on_click(cx.listener(Self::new_deck_click)),
+                        ),
                     ),
-            ),
-        )
+                ),
+            )
     }
 }
 
@@ -155,7 +179,15 @@ impl Render for ListItem {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl IntoElement {
         let theme = cx.global::<Theme>();
 
-        let stats = self.deck.stats.as_ref().unwrap();
+        let stats = match self.deck.stats.as_ref() {
+            Some(stats) => stats,
+            None => &DeckStat {
+                id: None,
+                new: 0,
+                learning: 0,
+                due: 0,
+            },
+        };
 
         div()
             .flex()

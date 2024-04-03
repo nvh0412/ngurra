@@ -20,13 +20,6 @@ impl TextField {
         let view = TextView::init(cx, &focus_handle, placeholder);
         Self { focus_handle, view }
     }
-
-    pub fn set_place_holder(&mut self, placeholder: String, cx: &mut WindowContext) {
-        self.view.update(cx, |text_view, cx| {
-            text_view.placeholder = placeholder;
-            cx.notify();
-        });
-    }
 }
 
 impl RenderOnce for TextField {
