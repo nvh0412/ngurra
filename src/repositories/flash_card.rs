@@ -268,7 +268,7 @@ impl FlashCard {
         match self.id {
             Some(id) => {
                 conn.execute(
-                    "UPDATE cards SET question = ?, answer = ?, deck_id = ?, ef = ?, interval = ?, last_studied_time = ?, due = ?, queue = ? WHERE id = ?",
+                    "UPDATE cards SET question = ?, answer = ?, deck_id = ?, ef = ?, interval = ?, last_studied_time = ?, due = ?, queue = ?, data = ? WHERE id = ?",
                     params![
                         self.question,
                         self.answer,
@@ -279,12 +279,13 @@ impl FlashCard {
                         self.due,
                         self.queue.clone() as i8,
                         id.to_string(),
+                        self.data
                     ]
                 )?;
             }
             None => {
                 let mut stmt = conn.prepare_cached(
-                    "INSERT INTO cards (question, answer, creation_time, deck_id, ef, interval, last_studied_time, queue, due) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                    "INSERT INTO cards (question, answer, creation_time, deck_id, ef, interval, last_studied_time, queue, due, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
                 )?;
 
                 stmt.execute(params![
@@ -296,7 +297,8 @@ impl FlashCard {
                     self.interval.to_string(),
                     last_studied_time.to_string(),
                     self.queue.clone() as i8,
-                    self.due
+                    self.due,
+                    self.data
                 ])?;
 
                 let id = conn.last_insert_rowid();

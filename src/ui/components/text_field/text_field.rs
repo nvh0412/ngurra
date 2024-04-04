@@ -1,9 +1,9 @@
 use std::ops::Range;
 
 use gpui::{
-    div, EventEmitter, FocusHandle, InteractiveElement, InteractiveText, IntoElement, KeyDownEvent,
-    ParentElement, Render, RenderOnce, Styled, StyledText, TextStyle, View, ViewContext,
-    VisualContext, WindowContext,
+    div, EventEmitter, FocusHandle, HighlightStyle, InteractiveElement, InteractiveText,
+    IntoElement, KeyDownEvent, ParentElement, Render, RenderOnce, Styled, StyledText, TextStyle,
+    View, ViewContext, VisualContext, WindowContext,
 };
 
 use crate::theme::Theme;
@@ -24,7 +24,7 @@ impl TextField {
 
 impl RenderOnce for TextField {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        cx.focus(&self.focus_handle);
+        // cx.focus(&self.focus_handle);
         let theme = cx.global::<Theme>();
 
         let clone = self.view.clone();
@@ -145,6 +145,20 @@ impl TextView {
 
         words
     }
+
+    pub fn char_range_to_text_range(&self, text: &str) -> Range<usize> {
+        let start = text
+            .chars()
+            .take(self.selection.start)
+            .collect::<String>()
+            .len();
+        let end = text
+            .chars()
+            .take(self.selection.end)
+            .collect::<String>()
+            .len();
+        start..end
+    }
 }
 
 impl Render for TextView {
@@ -156,12 +170,19 @@ impl Render for TextView {
         style.color = theme.text;
         style.font_family = theme.font_sans.clone();
 
+        let mut selection_style = HighlightStyle::default();
+        let mut color = theme.lavender;
+        color.fade_out(0.8);
+        selection_style.background_color = Some(color);
+
         if text.len() == 0 {
             text = self.placeholder.to_string();
             style.color = theme.subtext0;
         }
 
-        let styled_text = StyledText::new(text + " ").with_highlights(&style, vec![]);
+        let highlights = vec![(self.char_range_to_text_range(&text), selection_style)];
+
+        let styled_text = StyledText::new(text + " ").with_highlights(&style, highlights);
         let view = cx.view().clone();
 
         InteractiveText::new("text", styled_text).on_click(self.word_ranges(), move |ev, cx| {

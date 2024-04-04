@@ -1,6 +1,7 @@
 use fsrs::MemoryState;
 use rusqlite::types::{FromSql, ValueRef};
 
+use rusqlite::ToSql;
 use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
@@ -61,6 +62,12 @@ impl FromSql for CardData {
         } else {
             Ok(Self::default())
         }
+    }
+}
+
+impl ToSql for CardData {
+    fn to_sql(&self) -> rusqlite::Result<rusqlite::types::ToSqlOutput<'_>> {
+        self.custom_data.to_sql()
     }
 }
 

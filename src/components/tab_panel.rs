@@ -34,7 +34,9 @@ impl TabView for TabPanelBuilder {
             cx.subscribe(
                 &*tab_view.borrow_mut(),
                 move |subscriber: &mut TabPanel, _emitter, event, cx| match event {
-                    TabEvent::Deck => subscriber.content = DeckView::view(cx).into(),
+                    TabEvent::Deck => {
+                        subscriber.content = DeckView::view(cx).into();
+                    }
                     TabEvent::Add => subscriber.content = AddCardView::view(cx).into(),
                     TabEvent::Browse => subscriber.content = CardBrowserView::view(cx).into(),
                 },

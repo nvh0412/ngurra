@@ -1,6 +1,10 @@
-use gpui::{div, prelude::*, Pixels, Render, View, WindowContext};
+use gpui::{
+    div, prelude::*, ClickEvent, EventEmitter, Pixels, Render, View, ViewContext, WindowContext,
+};
 
 use crate::{
+    components::tab_bar_container::TabEvent,
+    repositories,
     theme::Theme,
     ui::{button::button::Button, clickable::Clickable, text_field::text_field::TextField},
 };
@@ -11,6 +15,8 @@ pub struct AddCardView {
     deck_input: TextField,
 }
 
+impl EventEmitter<TabEvent> for AddCardView {}
+
 impl AddCardView {
     pub fn view(cx: &mut WindowContext) -> View<Self> {
         cx.new_view(|cx: &mut gpui::ViewContext<'_, AddCardView>| Self {
@@ -18,6 +24,25 @@ impl AddCardView {
             back_input: TextField::new(cx, "".to_string()),
             deck_input: TextField::new(cx, "".to_string()),
         })
+    }
+
+    fn save_click(&mut self, _event: &ClickEvent, cx: &mut ViewContext<Self>) {
+        let collection = cx.global::<crate::Collection>();
+        let front = &self.front_input.view.read(&cx).text;
+        let back = &self.back_input.view.read(&cx).text;
+        let deck = &self.deck_input.view.read(&cx).text;
+
+        let mut card =
+            repositories::flash_card::FlashCard::new(deck.parse().unwrap(), front, back, None);
+        match card.save(&collection.storage.conn) {
+            Ok(_) => {
+                cx.emit(TabEvent::Deck);
+                cx.notify();
+            }
+            Err(e) => {
+                log::error!("Error saving card: {:?}", e);
+            }
+        }
     }
 }
 
@@ -70,11 +95,10 @@ impl Render for AddCardView {
                                     )
                                     .child(self.back_input.clone())
                                     .child(
-                                        div()
-                                            .mt_5()
-                                            .flex()
-                                            .justify_end()
-                                            .child(Button::new("create", "Create card")),
+                                        div().mt_5().flex().justify_end().child(
+                                            Button::new("create", "Create card")
+                                                .on_click(cx.listener(Self::save_click)),
+                                        ),
                                     ),
                             ),
                     ),

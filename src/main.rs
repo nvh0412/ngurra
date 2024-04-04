@@ -27,6 +27,7 @@ use crate::{
         builder::Builder,
         collection::{Collection, CollectionBuilder},
     },
+    ngurra::init,
     theme::Theme,
 };
 
