@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use catppuccin::{Flavour, FlavourColours};
 use gpui::{AppContext, Global, Hsla, Rgba, SharedString};
 
@@ -74,5 +76,15 @@ impl Theme {
     pub fn change(flavour: Flavour, cx: &mut AppContext) {
         cx.set_global(Self::from(flavour.colours()));
         cx.refresh();
+    }
+}
+
+pub trait ActiveTheme {
+    fn theme(&self) -> &Theme;
+}
+
+impl ActiveTheme for AppContext {
+    fn theme(&self) -> &Theme {
+        self.global::<Theme>()
     }
 }

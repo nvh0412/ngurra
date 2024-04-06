@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 gpui = { git = "https://github.com/zed-industries/zed" }
 rusqlite = { version = "0.30.0", features = ["bundled"] }
-chrono = "0.4"
+chrono = "0.4.37"
 time = "0.3"
 uuid = { version = "0.8", features = ["v4"] }
 env_logger = "0.9"
@@ -19,3 +19,4 @@ anyhow = "1.0.80"
 fsrs = { git = "https://github.com/open-spaced-repetition/fsrs-rs" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.114"
+smallvec = "1.13.2"

@@ -42,7 +42,9 @@ pub enum TabEvent {
 impl EventEmitter<TabEvent> for TabBarView {}
 
 impl Render for TabBarView {
-    fn render(&mut self, _cx: &mut gpui::ViewContext<Self>) -> impl IntoElement {}
+    fn render(&mut self, _cx: &mut gpui::ViewContext<Self>) -> impl IntoElement {
+        gpui::Empty
+    }
 }
 
 impl RenderOnce for TabBarContainer {

@@ -1,4 +1,4 @@
-use gpui::{AnyView, Context, Global, Model, WindowContext};
+use gpui::{AnyView, BorrowAppContext, Context, Global, Model, WindowContext};
 
 use crate::components::tab_bar_container::TabBarContainer;
 

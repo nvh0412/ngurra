@@ -1,10 +1,9 @@
 use gpui::{
-    div, AnyView, InteractiveElement, IntoElement, ParentElement, Pixels, Render, RenderOnce,
-    Styled, View, VisualContext, WindowContext,
+    div, AnchorCorner, AnyView, InteractiveElement, IntoElement, ParentElement, Pixels, Render,
+    RenderOnce, Styled, View, VisualContext, WindowContext,
 };
 
 use crate::{
-    components::shared::icon::Icon,
     models::{
         collection::{Collection, CollectionBuilder},
         deck::get_decks,
@@ -135,6 +134,12 @@ impl HocListItem {
     pub fn init(inner: AnyView, deck_id: u32) -> Self {
         Self { inner, deck_id }
     }
+
+    // fn build_deck_menu(cx: &mut WindowContext, deck_id: u32) -> View<ContextMenu> {
+    //     ContextMenu::build(cx, |menu, _| {
+    //         menu.entry("Sign In", None, move |_| print!("Sign In clicked"))
+    //     })
+    // }
 }
 
 impl RenderOnce for HocListItem {
@@ -150,13 +155,14 @@ impl RenderOnce for HocListItem {
             .border_1()
             .rounded_xl()
             .child(self.inner)
-            .child(
-                div()
-                    .child(Icon::Settings)
-                    .on_mouse_down(gpui::MouseButton::Left, move |_ev, cx| {
-                        println!("Open menu clicked")
-                    }),
-            )
+        // .child(
+        //     div().child(
+        //         popover_menu("deck_menu")
+        //             .menu(move |cx| Some(Self::build_deck_menu(cx, self.deck_id)))
+        //             .anchor(AnchorCorner::TopLeft)
+        //             .trigger(Button::new("deck_menu", "M")),
+        //     ),
+        // )
     }
 }
 

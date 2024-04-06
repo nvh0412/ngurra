@@ -2,7 +2,10 @@ use core::fmt;
 
 use gpui::{div, svg, IntoElement, ParentElement, RenderOnce, SharedString, Styled};
 
-use crate::theme::Theme;
+use crate::{
+    theme::Theme,
+    ui::{button::button::Button, clickable::Clickable, selectable::Selectable},
+};
 
 #[derive(Debug, IntoElement)]
 pub enum Icon {
@@ -38,6 +41,22 @@ impl Icon {
 impl fmt::Display for Icon {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt::Debug::fmt(self, f)
+    }
+}
+
+impl Clickable for Icon {
+    fn on_click(
+        self,
+        handler: impl Fn(&gpui::ClickEvent, &mut gpui::WindowContext) + 'static,
+    ) -> Self {
+        self.on_click(handler)
+    }
+}
+
+impl Selectable for Button {
+    fn selected(mut self, selected: bool) -> Self {
+        // self.selected(selected)
+        self
     }
 }
 
