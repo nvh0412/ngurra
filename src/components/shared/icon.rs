@@ -8,6 +8,7 @@ use crate::theme::Theme;
 pub enum Icon {
     BookText,
     FilePlus,
+    Settings,
     FileSearch,
     MoveLeft,
 }

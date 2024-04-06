@@ -4,6 +4,7 @@ use gpui::{
 };
 
 use crate::{
+    components::shared::icon::Icon,
     models::{
         collection::{Collection, CollectionBuilder},
         deck::get_decks,
@@ -148,20 +149,14 @@ impl RenderOnce for HocListItem {
             .p_2()
             .border_1()
             .rounded_xl()
-            .on_mouse_down(gpui::MouseButton::Left, move |_e, cx| {
-                StackableViewState::update(
-                    |state, cx| {
-                        state.push(
-                            DeckDetailBuilder {
-                                deck_id: self.deck_id,
-                            },
-                            cx,
-                        )
-                    },
-                    cx,
-                );
-            })
             .child(self.inner)
+            .child(
+                div()
+                    .child(Icon::Settings)
+                    .on_mouse_down(gpui::MouseButton::Left, move |_ev, cx| {
+                        println!("Open menu clicked")
+                    }),
+            )
     }
 }
 
@@ -178,6 +173,7 @@ impl ListItem {
 impl Render for ListItem {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl IntoElement {
         let theme = cx.global::<Theme>();
+        let deck_id = self.deck.id.unwrap();
 
         let stats = match self.deck.stats.as_ref() {
             Some(stats) => stats,
@@ -194,6 +190,12 @@ impl Render for ListItem {
             .w_full()
             .justify_center()
             .items_center()
+            .on_mouse_down(gpui::MouseButton::Left, move |_e, cx| {
+                StackableViewState::update(
+                    |state, cx| state.push(DeckDetailBuilder { deck_id }, cx),
+                    cx,
+                );
+            })
             .child(div().min_w_80().text_sm().child(self.deck.name.clone()))
             .child(
                 div()
