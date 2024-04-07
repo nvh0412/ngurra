@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, ops::Div, rc::Rc};
 
 use gpui::{
     anchored, deferred, div, point, prelude::FluentBuilder, px, AnchorCorner, AnyElement, Bounds,

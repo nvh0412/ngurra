@@ -70,11 +70,11 @@ impl Render for NewDeckForm {
                                     .justify_end()
                                     .flex()
                                     .child(
-                                        Button::new("btn-save", "Create")
+                                        Button::new("btn-save", "Create", None)
                                             .on_click(cx.listener(Self::save_click)),
                                     )
                                     .child(div().ml_2().child(
-                                        Button::new("btn-cancel", "Cancel").on_click(
+                                        Button::new("btn-cancel", "Cancel", None).on_click(
                                             |event, _cx| {
                                                 log::info!("Button clicked: {:?}", event);
                                             },

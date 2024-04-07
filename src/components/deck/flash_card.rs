@@ -142,10 +142,19 @@ impl Render for FlashCard {
                 div()
                     .flex()
                     .justify_between()
-                    .child(Button::new("again", "Again").on_click(cx.listener(Self::again_click)))
-                    .child(Button::new("easy", "Easy").on_click(cx.listener(Self::easy_click)))
-                    .child(Button::new("good", "Good").on_click(cx.listener(Self::good_click)))
-                    .child(Button::new("hard", "Hard").on_click(cx.listener(Self::hard_click))),
+                    .child(
+                        Button::new("again", "Again", None)
+                            .on_click(cx.listener(Self::again_click)),
+                    )
+                    .child(
+                        Button::new("easy", "Easy", None).on_click(cx.listener(Self::easy_click)),
+                    )
+                    .child(
+                        Button::new("good", "Good", None).on_click(cx.listener(Self::good_click)),
+                    )
+                    .child(
+                        Button::new("hard", "Hard", None).on_click(cx.listener(Self::hard_click)),
+                    ),
             )
         } else {
             div()

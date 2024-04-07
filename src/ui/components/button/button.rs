@@ -3,8 +3,9 @@ use gpui::{
 };
 
 use crate::{
+    components::shared::icon::Icon,
     theme::Theme,
-    ui::{clickable::Clickable, disableable::Disableable},
+    ui::{clickable::Clickable, disableable::Disableable, selectable::Selectable},
 };
 
 use super::{button_base::ButtonBase, button_common::ButtonCommon};
@@ -13,13 +14,21 @@ use super::{button_base::ButtonBase, button_common::ButtonCommon};
 pub struct Button {
     pub label: SharedString,
     pub base: ButtonBase,
+    pub icon: Option<Icon>,
+    pub selected: bool,
 }
 
 impl Button {
-    pub fn new(id: impl Into<ElementId>, label: impl Into<SharedString>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        label: impl Into<SharedString>,
+        icon: Option<Icon>,
+    ) -> Self {
         Self {
             label: label.into(),
             base: ButtonBase::new(id),
+            icon,
+            selected: false,
         }
     }
 }
@@ -30,6 +39,13 @@ impl Clickable for Button {
         handler: impl Fn(&gpui::ClickEvent, &mut gpui::WindowContext) + 'static,
     ) -> Self {
         self.base = self.base.on_click(handler);
+        self
+    }
+}
+
+impl Selectable for Button {
+    fn selected(mut self, selected: bool) -> Self {
+        self.selected = selected;
         self
     }
 }
@@ -67,27 +83,40 @@ impl RenderOnce for Button {
             theme.text
         };
 
-        self.base.child(
-            div()
-                .flex()
-                .flex_row()
-                .border_1()
-                .border_color(theme.crust)
-                .items_center()
-                .rounded_lg()
-                .px_3()
-                .py_2()
-                .child(
+        if let Some(icon) = self.icon {
+            self.base.child(
+                div().flex().flex_row().px_3().py_2().child(
                     div()
                         .flex()
                         .flex_row()
                         .items_center()
                         .justify_between()
-                        .text_color(text_color)
-                        .text_sm()
-                        .font_weight(FontWeight::BOLD)
-                        .child(self.label),
+                        .child(icon),
                 ),
-        )
+            )
+        } else {
+            self.base.child(
+                div()
+                    .flex()
+                    .flex_row()
+                    .border_1()
+                    .border_color(theme.crust)
+                    .items_center()
+                    .rounded_lg()
+                    .px_3()
+                    .py_2()
+                    .child(
+                        div()
+                            .flex()
+                            .flex_row()
+                            .items_center()
+                            .justify_between()
+                            .text_color(text_color)
+                            .text_sm()
+                            .font_weight(FontWeight::BOLD)
+                            .child(self.label),
+                    ),
+            )
+        }
     }
 }

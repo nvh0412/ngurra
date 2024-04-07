@@ -146,8 +146,6 @@ impl ParentElement for ListItem {
 
 impl RenderOnce for ListItem {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        let theme = cx.global::<Theme>();
-
         div()
             .flex()
             .id(self.id)
@@ -157,9 +155,6 @@ impl RenderOnce for ListItem {
             .when(self.inset, |this| {
                 this.ml(self.indent_level as f32 * self.indent_step_size)
                     .px_2()
-            })
-            .when(!self.inset, |this| {
-                this.hover(|style| style.bg(theme.mantle))
             })
             .child(
                 div()
@@ -174,9 +169,6 @@ impl RenderOnce for ListItem {
                         ListItemSpacing::Sparse => this.py_1(),
                     })
                     .group("list_item")
-                    .when(self.inset && !self.disabled, |this| {
-                        this.hover(|style| style.bg(theme.mantle))
-                    })
                     .when_some(self.on_click, |this, on_click| {
                         this.cursor_pointer().on_click(on_click)
                     })
@@ -199,7 +191,7 @@ impl RenderOnce for ListItem {
                             .flex()
                             .flex_grow()
                             .flex_shrink_0()
-                            .flex_basis(relative(0.25))
+                            // .flex_basis(relative(0.25))
                             .gap_1()
                             .overflow_hidden()
                             .children(self.start_slot)

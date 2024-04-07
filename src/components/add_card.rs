@@ -96,7 +96,7 @@ impl Render for AddCardView {
                                     .child(self.back_input.clone())
                                     .child(
                                         div().mt_5().flex().justify_end().child(
-                                            Button::new("create", "Create card")
+                                            Button::new("create", "Create card", None)
                                                 .on_click(cx.listener(Self::save_click)),
                                         ),
                                     ),

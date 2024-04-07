@@ -1,17 +1,23 @@
+use std::fmt::format;
+
 use gpui::{
     div, AnchorCorner, AnyView, InteractiveElement, IntoElement, ParentElement, Pixels, Render,
-    RenderOnce, Styled, View, VisualContext, WindowContext,
+    RenderOnce, SharedString, Styled, View, VisualContext, WindowContext,
 };
 
 use crate::{
+    components::shared::icon::Icon,
     models::{
-        collection::{Collection, CollectionBuilder},
+        collection::{self, Collection, CollectionBuilder},
         deck::get_decks,
     },
     repositories::deck::DeckStat,
     state::{StackableView, StackableViewState},
     theme::Theme,
-    ui::{button::button::Button, clickable::Clickable},
+    ui::{
+        button::button::Button, clickable::Clickable, context_menu::ContextMenu,
+        popover_menu::popover_menu,
+    },
     Deck,
 };
 
@@ -115,7 +121,7 @@ impl Render for DeckListView {
                 div().mb_16().flex().justify_center().child(
                     div().w(Pixels(300.0)).flex().justify_center().child(
                         div().child(
-                            Button::new("create_deck", "Create Deck")
+                            Button::new("create_deck", "Create Deck", None)
                                 .on_click(cx.listener(Self::new_deck_click)),
                         ),
                     ),
@@ -128,41 +134,48 @@ impl Render for DeckListView {
 pub struct HocListItem {
     inner: AnyView,
     deck_id: u32,
+    menu_item: String,
 }
 
 impl HocListItem {
     pub fn init(inner: AnyView, deck_id: u32) -> Self {
-        Self { inner, deck_id }
+        let menu_item = format!("menu-item-{}", deck_id);
+        Self {
+            inner,
+            deck_id,
+            menu_item,
+        }
     }
 
-    // fn build_deck_menu(cx: &mut WindowContext, deck_id: u32) -> View<ContextMenu> {
-    //     ContextMenu::build(cx, |menu, _| {
-    //         menu.entry("Sign In", None, move |_| print!("Sign In clicked"))
-    //     })
-    // }
+    fn build_deck_menu(cx: &mut WindowContext, deck_id: u32) -> View<ContextMenu> {
+        ContextMenu::build(cx, move |menu, _wc| {
+            menu.entry("Delete", None, move |wc| {
+                let collection = wc.global::<Collection>();
+                Deck::delete(deck_id, &collection.storage.conn).unwrap();
+            })
+        })
+    }
 }
 
 impl RenderOnce for HocListItem {
     fn render(self, cx: &mut WindowContext) -> impl IntoElement {
-        let theme = cx.global::<Theme>();
-        let mut bg_hover = theme.mantle;
-        bg_hover.fade_out(0.5);
+        let menu_id = SharedString::from(self.menu_item);
+        let menu_btn = SharedString::from(format!("btn-{}", self.deck_id));
 
         div()
             .flex()
-            .hover(|s| s.bg(bg_hover))
             .p_2()
             .border_1()
             .rounded_xl()
             .child(self.inner)
-        // .child(
-        //     div().child(
-        //         popover_menu("deck_menu")
-        //             .menu(move |cx| Some(Self::build_deck_menu(cx, self.deck_id)))
-        //             .anchor(AnchorCorner::TopLeft)
-        //             .trigger(Button::new("deck_menu", "M")),
-        //     ),
-        // )
+            .child(
+                div().child(
+                    popover_menu(menu_id)
+                        .menu(move |cx| Some(Self::build_deck_menu(cx, self.deck_id)))
+                        .anchor(AnchorCorner::TopLeft)
+                        .trigger(Button::new(menu_btn, "M", Some(Icon::Settings))),
+                ),
+            )
     }
 }
 
@@ -179,6 +192,9 @@ impl ListItem {
 impl Render for ListItem {
     fn render(&mut self, cx: &mut gpui::ViewContext<Self>) -> impl IntoElement {
         let theme = cx.global::<Theme>();
+        let mut bg_hover = theme.mantle;
+        bg_hover.fade_out(0.5);
+
         let deck_id = self.deck.id.unwrap();
 
         let stats = match self.deck.stats.as_ref() {
@@ -194,6 +210,7 @@ impl Render for ListItem {
         div()
             .flex()
             .w_full()
+            .hover(|s| s.bg(bg_hover))
             .justify_center()
             .items_center()
             .on_mouse_down(gpui::MouseButton::Left, move |_e, cx| {

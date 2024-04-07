@@ -129,7 +129,7 @@ impl Render for DeckDetail {
                                 ),
                         )
                         .child(div().mt_5().flex().justify_center().child(
-                            Button::new("study-btn", "Study Now").on_click(move |_e, cx| {
+                            Button::new("study-btn", "Study Now", None).on_click(move |_e, cx| {
                                 StackableViewState::update(
                                     |state, cx| {
                                         state.push(

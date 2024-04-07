@@ -53,7 +53,7 @@ impl Clickable for Icon {
     }
 }
 
-impl Selectable for Button {
+impl Selectable for Icon {
     fn selected(mut self, selected: bool) -> Self {
         // self.selected(selected)
         self
