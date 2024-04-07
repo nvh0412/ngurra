@@ -34,7 +34,6 @@ impl DeckDetail {
 
 impl Render for DeckDetail {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        println!("Rendering deck detail");
         let theme = cx.global::<Theme>();
         let col = cx.global::<collection::Collection>();
         let mut deck = self.get_deck(col);

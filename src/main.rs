@@ -49,14 +49,14 @@ fn main() {
 
         cx.open_window(
             WindowOptions {
-                bounds: Some(Bounds {
+                bounds: WindowBounds::Fixed(Bounds {
                     origin: Point {
-                        x: 100.into(),
-                        y: 100.into(),
+                        x: 100.0.into(),
+                        y: 100.0.into(),
                     },
                     size: Size {
-                        width: 820.into(),
-                        height: 600.into(),
+                        width: 820.0.into(),
+                        height: 600.0.into(),
                     },
                 }),
                 titlebar: Some(TitlebarOptions {
@@ -64,13 +64,12 @@ fn main() {
                     appears_transparent: Default::default(),
                     traffic_light_position: Default::default(),
                 }),
+                center: true,
                 focus: true,
                 show: true,
                 kind: WindowKind::Normal,
                 is_movable: true,
                 display_id: None,
-                fullscreen: false,
-                window_background: WindowBackgroundAppearance::default(),
             },
             |cx| Ngurra::view(cx),
         );

@@ -186,7 +186,7 @@ impl ContextMenuItem {
 
 impl Render for ContextMenu {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        div().occlude().elevation_2(cx).flex().flex_row().child(
+        div().elevation_2(cx).flex().flex_row().child(
             div()
                 .flex()
                 .flex_col()
